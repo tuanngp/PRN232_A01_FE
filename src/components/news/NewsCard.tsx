@@ -37,7 +37,7 @@ export function NewsCard({
                 {showCategory && (
                   <>
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                      {article.categoryName}
+                      {article.category?.categoryName || 'Uncategorized'}
                     </span>
                     <span>•</span>
                   </>
@@ -68,7 +68,7 @@ export function NewsCard({
           <CardContent className="p-6">
             {showCategory && (
               <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-3">
-                {article.categoryName}
+                {article.category?.categoryName || 'Uncategorized'}
               </span>
             )}
             <h2 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-3 line-clamp-2">
@@ -111,7 +111,7 @@ export function NewsCard({
         <CardContent className="p-4">
           {showCategory && (
             <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium mb-2">
-              {article.categoryName}
+              {article.category?.categoryName || 'Uncategorized'}
             </span>
           )}
           

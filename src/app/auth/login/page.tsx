@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AccountRole } from '@/types/api';
+import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
 
 interface LoginForm {
   email: string;

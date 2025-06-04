@@ -1,9 +1,9 @@
 // Category hooks for FU News System
 // Provides optimized hooks for category operations
 
-import { useState, useEffect, useCallback } from 'react';
-import { Category } from '@/types/api';
 import { categoryService } from '@/lib/api-services';
+import { Category } from '@/types/api';
+import { useCallback, useEffect, useState } from 'react';
 
 interface UseCategoriesResult {
   categories: Category[];

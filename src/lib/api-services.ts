@@ -1,214 +1,40 @@
-// API Services cho FU News System
-// Provides specific functions for each API endpoint used in components
+// API Services cho FU News Management System
+// Updated to match swagger.json specification
 
-import { apiClient } from './api';
 import { API_ENDPOINTS, COMMON_QUERIES } from '@/constants/api';
-import { 
-  NewsArticle, 
-  Category, 
-  Tag, 
-  SystemAccount, 
-  LoginRequest, 
-  LoginResponse,
-  NewsArticleRequest,
-  CategoryRequest,
-  TagRequest,
-  SystemAccountRequest,
+import {
+  AccountRole,
+  AccountStatistics,
+  AddMultipleTagsDto,
+  AddTagToArticleDto,
   ApiResponse,
-  ApiSingleResponse
+  ApiSingleResponse,
+  Category,
+  ChangeNewsStatusDto,
+  ChangePasswordDto,
+  CreateBulkTagsDto,
+  CreateCategoryDto,
+  CreateNewsArticleDto,
+  CreateSystemAccountDto,
+  CreateTagDto,
+  LoginRequest,
+  LoginResponse,
+  NewsArticle,
+  RefreshTokenRequest,
+  ReplaceTagsDto,
+  ResetPasswordDto,
+  RevokeTokenRequest,
+  SearchParams,
+  SystemAccount,
+  Tag,
+  TagStatistics,
+  UpdateCategoryDto,
+  UpdateNewsArticleDto,
+  UpdateProfileDto,
+  UpdateSystemAccountDto,
+  UpdateTagDto
 } from '@/types/api';
-
-// ===== NEWS SERVICES =====
-
-export const newsService = {
-  // Get latest news for homepage
-  async getLatestNews(limit = 10): Promise<NewsArticle[]> {
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLES,
-      { $orderby: 'CreatedDate desc', $top: limit, $filter: "NewsStatus eq 'Active'" }
-    );
-    return response.data?.$values || [];
-  },
-
-  // Get news by category
-  async getNewsByCategory(categoryId: number, page = 1, limit = 10): Promise<NewsArticle[]> {
-    const skip = (page - 1) * limit;
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLES,
-      { 
-        $filter: `CategoryId eq ${categoryId} and NewsStatus eq 'Active'`,
-        $orderby: 'CreatedDate desc',
-        $top: limit,
-        $skip: skip
-      }
-    );
-    return response.data?.$values || [];
-  },
-
-  // Get news detail by ID
-  async getNewsById(id: number): Promise<NewsArticle> {
-    const response = await apiClient.get<ApiSingleResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLE_BY_ID(id)
-    );
-    return response.data;
-  },
-
-  // Search news by keyword
-  async searchNews(keyword: string, page = 1, limit = 10): Promise<NewsArticle[]> {
-    const skip = (page - 1) * limit;
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLES,
-      { 
-        $filter: `contains(NewsTitle, '${keyword}') or contains(NewsContent, '${keyword}')`,
-        $orderby: 'CreatedDate desc',
-        $top: limit,
-        $skip: skip
-      }
-    );
-    return response.data?.$values || [];
-  },
-
-  // Get featured news (example: top 5 most recent)
-  async getFeaturedNews(): Promise<NewsArticle[]> {
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLES,
-      { $orderby: 'CreatedDate desc', $top: 5, $filter: "NewsStatus eq 'Active'" }
-    );
-    return response.data?.$values || [];
-  },
-
-  // Admin/Staff: Create news article
-  async createNews(data: NewsArticleRequest): Promise<NewsArticle> {
-    const response = await apiClient.post<ApiSingleResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLES,
-      data
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Update news article
-  async updateNews(id: number, data: NewsArticleRequest): Promise<NewsArticle> {
-    const response = await apiClient.put<ApiSingleResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLE_BY_ID(id),
-      data
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Delete news article
-  async deleteNews(id: number): Promise<void> {
-    await apiClient.delete(API_ENDPOINTS.NEWS_ARTICLE_BY_ID(id));
-  },
-
-  // Admin/Staff: Get all news with pagination
-  async getAllNews(page = 1, limit = 10): Promise<NewsArticle[]> {
-    const skip = (page - 1) * limit;
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLES,
-      { 
-        $orderby: 'CreatedDate desc',
-        $top: limit,
-        $skip: skip
-      }
-    );
-    return response.data?.$values || [];
-  }
-};
-
-// ===== CATEGORY SERVICES =====
-
-export const categoryService = {
-  // Get all active categories for public navigation
-  async getActiveCategories(): Promise<Category[]> {
-    const response = await apiClient.get<ApiResponse<Category>>(
-      API_ENDPOINTS.CATEGORIES,
-      { $filter: 'IsActive eq true' }
-    );
-    return response.data?.$values || [];
-  },
-
-  // Get all categories (for admin)
-  async getAllCategories(): Promise<Category[]> {
-    const response = await apiClient.get<ApiResponse<Category>>(
-      API_ENDPOINTS.CATEGORIES
-    );
-    return response.data?.$values || [];
-  },
-
-  // Get category by ID
-  async getCategoryById(id: number): Promise<Category> {
-    const response = await apiClient.get<ApiSingleResponse<Category>>(
-      API_ENDPOINTS.CATEGORY_BY_ID(id)
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Create category
-  async createCategory(data: CategoryRequest): Promise<Category> {
-    const response = await apiClient.post<ApiSingleResponse<Category>>(
-      API_ENDPOINTS.CATEGORIES,
-      data
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Update category
-  async updateCategory(id: number, data: CategoryRequest): Promise<Category> {
-    const response = await apiClient.put<ApiSingleResponse<Category>>(
-      API_ENDPOINTS.CATEGORY_BY_ID(id),
-      data
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Delete category
-  async deleteCategory(id: number): Promise<void> {
-    await apiClient.delete(API_ENDPOINTS.CATEGORY_BY_ID(id));
-  }
-};
-
-// ===== TAG SERVICES =====
-
-export const tagService = {
-  // Get all tags
-  async getAllTags(): Promise<Tag[]> {
-    const response = await apiClient.get<ApiResponse<Tag>>(
-      API_ENDPOINTS.TAGS
-    );
-    return response.data?.$values || [];
-  },
-
-  // Get tag by ID
-  async getTagById(id: number): Promise<Tag> {
-    const response = await apiClient.get<ApiSingleResponse<Tag>>(
-      API_ENDPOINTS.TAG_BY_ID(id)
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Create tag
-  async createTag(data: TagRequest): Promise<Tag> {
-    const response = await apiClient.post<ApiSingleResponse<Tag>>(
-      API_ENDPOINTS.TAGS,
-      data
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Update tag
-  async updateTag(id: number, data: TagRequest): Promise<Tag> {
-    const response = await apiClient.put<ApiSingleResponse<Tag>>(
-      API_ENDPOINTS.TAG_BY_ID(id),
-      data
-    );
-    return response.data;
-  },
-
-  // Admin/Staff: Delete tag
-  async deleteTag(id: number): Promise<void> {
-    await apiClient.delete(API_ENDPOINTS.TAG_BY_ID(id));
-  }
-};
+import { apiClient } from './api';
 
 // ===== AUTH SERVICES =====
 
@@ -216,7 +42,7 @@ export const authService = {
   // Login
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await apiClient.post<ApiSingleResponse<LoginResponse>>(
-      API_ENDPOINTS.LOGIN,
+      API_ENDPOINTS.AUTH.LOGIN,
       credentials
     );
     
@@ -224,17 +50,64 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('refreshToken', response.data.refreshToken);
-      localStorage.setItem('accountRole', response.data.accountRole.toString());
-      localStorage.setItem('accountName', response.data.accountName);
+      localStorage.setItem('accountRole', response.data.user.accountRole.toString());
+      localStorage.setItem('accountName', response.data.user.accountName);
+      localStorage.setItem('accountId', response.data.user.accountId.toString());
     }
     
     return response.data;
   },
 
+  // Refresh token (automatic)
+  async refreshToken(): Promise<LoginResponse> {
+    const response = await apiClient.post<ApiSingleResponse<LoginResponse>>(
+      API_ENDPOINTS.AUTH.REFRESH_TOKEN
+    );
+    
+    // Update tokens in localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+    }
+    
+    return response.data;
+  },
+
+  // Refresh token (manual with tokens)
+  async refreshTokenManual(tokens: RefreshTokenRequest): Promise<LoginResponse> {
+    const response = await apiClient.post<ApiSingleResponse<LoginResponse>>(
+      API_ENDPOINTS.AUTH.REFRESH_TOKEN_MANUAL,
+      tokens
+    );
+    
+    // Update tokens in localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+    }
+    
+    return response.data;
+  },
+
+  // Revoke token
+  async revokeToken(request: RevokeTokenRequest): Promise<void> {
+    await apiClient.post(API_ENDPOINTS.AUTH.REVOKE_TOKEN, request);
+  },
+
+  // Validate token
+  async validateToken(): Promise<boolean> {
+    try {
+      await apiClient.get(API_ENDPOINTS.AUTH.VALIDATE);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   // Logout
   async logout(): Promise<void> {
     try {
-      await apiClient.post(API_ENDPOINTS.REVOKE_TOKEN);
+      await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -244,7 +117,26 @@ export const authService = {
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('accountRole');
         localStorage.removeItem('accountName');
+        localStorage.removeItem('accountId');
       }
+    }
+  },
+
+  // Get profile
+  async getProfile(): Promise<SystemAccount> {
+    const response = await apiClient.get<ApiSingleResponse<SystemAccount>>(
+      API_ENDPOINTS.AUTH.PROFILE
+    );
+    return response.data;
+  },
+
+  // Check auth status
+  async checkAuth(): Promise<boolean> {
+    try {
+      await apiClient.get(API_ENDPOINTS.AUTH.CHECK_AUTH);
+      return true;
+    } catch {
+      return false;
     }
   },
 
@@ -256,16 +148,18 @@ export const authService = {
   },
 
   // Get current user info from localStorage
-  getCurrentUser(): { accountName: string; accountRole: number } | null {
+  getCurrentUser(): { accountName: string; accountRole: AccountRole; accountId: number } | null {
     if (typeof window === 'undefined') return null;
     
     const accountName = localStorage.getItem('accountName');
     const accountRole = localStorage.getItem('accountRole');
+    const accountId = localStorage.getItem('accountId');
     
-    if (accountName && accountRole) {
+    if (accountName && accountRole && accountId) {
       return {
         accountName,
-        accountRole: parseInt(accountRole)
+        accountRole: parseInt(accountRole) as AccountRole,
+        accountId: parseInt(accountId)
       };
     }
     
@@ -273,72 +167,491 @@ export const authService = {
   }
 };
 
-// ===== ACCOUNT SERVICES =====
+// ===== CATEGORY SERVICES =====
 
-export const accountService = {
-  // Admin: Get all accounts
-  async getAllAccounts(): Promise<SystemAccount[]> {
-    const response = await apiClient.get<ApiResponse<SystemAccount>>(
-      API_ENDPOINTS.SYSTEM_ACCOUNTS
+export const categoryService = {
+  // Get all categories
+  async getAllCategories(): Promise<Category[]> {
+    const response = await apiClient.get<ApiResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.BASE
     );
     return response.data?.$values || [];
   },
 
-  // Admin: Get account by ID
-  async getAccountById(id: number): Promise<SystemAccount> {
-    const response = await apiClient.get<ApiSingleResponse<SystemAccount>>(
-      API_ENDPOINTS.SYSTEM_ACCOUNT_BY_ID(id)
+  // Get category by ID
+  async getCategoryById(id: number): Promise<Category> {
+    const response = await apiClient.get<ApiSingleResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.BY_ID(id)
     );
     return response.data;
   },
 
-  // Admin: Create account
-  async createAccount(data: SystemAccountRequest): Promise<SystemAccount> {
-    const response = await apiClient.post<ApiSingleResponse<SystemAccount>>(
-      API_ENDPOINTS.SYSTEM_ACCOUNTS,
+  // Create category
+  async createCategory(data: CreateCategoryDto): Promise<Category> {
+    const response = await apiClient.post<ApiSingleResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.BASE,
       data
     );
     return response.data;
   },
 
-  // Admin: Update account
-  async updateAccount(id: number, data: SystemAccountRequest): Promise<SystemAccount> {
-    const response = await apiClient.put<ApiSingleResponse<SystemAccount>>(
-      API_ENDPOINTS.SYSTEM_ACCOUNT_BY_ID(id),
+  // Update category
+  async updateCategory(id: number, data: UpdateCategoryDto): Promise<Category> {
+    const response = await apiClient.put<ApiSingleResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.BY_ID(id),
       data
     );
     return response.data;
   },
 
-  // Admin: Delete account
-  async deleteAccount(id: number): Promise<void> {
-    await apiClient.delete(API_ENDPOINTS.SYSTEM_ACCOUNT_BY_ID(id));
+  // Delete category
+  async deleteCategory(id: number): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.CATEGORY.BY_ID(id));
+  },
+
+  // Get subcategories by parent ID
+  async getSubcategories(parentId: number): Promise<Category[]> {
+    const response = await apiClient.get<ApiResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.SUBCATEGORIES(parentId)
+    );
+    return response.data?.$values || [];
+  },
+
+  // Get root categories
+  async getRootCategories(): Promise<Category[]> {
+    const response = await apiClient.get<ApiResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.ROOT
+    );
+    return response.data?.$values || [];
+  },
+
+  // Toggle category status
+  async toggleCategoryStatus(id: number): Promise<Category> {
+    const response = await apiClient.patch<ApiSingleResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.TOGGLE_STATUS(id)
+    );
+    return response.data;
+  },
+
+  // Get category tree
+  async getCategoryTree(): Promise<Category[]> {
+    const response = await apiClient.get<ApiResponse<Category>>(
+      API_ENDPOINTS.CATEGORY.TREE
+    );
+    return response.data?.$values || [];
+  },
+
+  // OData: Get categories with OData queries
+  async getCategoriesOData(query?: string): Promise<Category[]> {
+    const endpoint = query ? `${API_ENDPOINTS.CATEGORY.BASE}?${query}` : API_ENDPOINTS.CATEGORY.BASE;
+    const response = await apiClient.get<ApiResponse<Category>>(endpoint);
+    return response.data?.$values || [];
+  },
+
+  // Get active categories for public use
+  async getActiveCategories(): Promise<Category[]> {
+    return this.getCategoriesOData(COMMON_QUERIES.ACTIVE_CATEGORIES);
   }
 };
 
-// ===== UTILITY SERVICES =====
+// ===== NEWS ARTICLE SERVICES =====
 
-export const utilityService = {
-  // Get news count for pagination
-  async getNewsCount(categoryId?: number, searchKeyword?: string): Promise<number> {
-    let filter = "NewsStatus eq 'Active'";
-    
-    if (categoryId) {
-      filter += ` and CategoryId eq ${categoryId}`;
-    }
-    
-    if (searchKeyword) {
-      filter += ` and (contains(NewsTitle, '${searchKeyword}') or contains(NewsContent, '${searchKeyword}'))`;
-    }
-
+export const newsService = {
+  // Get all news articles
+  async getAllNews(): Promise<NewsArticle[]> {
     const response = await apiClient.get<ApiResponse<NewsArticle>>(
-      API_ENDPOINTS.NEWS_ARTICLES,
-      { 
-        $filter: filter,
-        $count: true
-      }
+      API_ENDPOINTS.NEWS_ARTICLE.BASE
     );
+    return response.data?.$values || [];
+  },
+
+  // Get news article by ID
+  async getNewsById(id: number): Promise<NewsArticle> {
+    const response = await apiClient.get<ApiSingleResponse<NewsArticle>>(
+      API_ENDPOINTS.NEWS_ARTICLE.BY_ID(id)
+    );
+    return response.data;
+  },
+
+  // Create news article
+  async createNews(data: CreateNewsArticleDto): Promise<NewsArticle> {
+    const response = await apiClient.post<ApiSingleResponse<NewsArticle>>(
+      API_ENDPOINTS.NEWS_ARTICLE.BASE,
+      data
+    );
+    return response.data;
+  },
+
+  // Update news article
+  async updateNews(id: number, data: UpdateNewsArticleDto): Promise<NewsArticle> {
+    const response = await apiClient.put<ApiSingleResponse<NewsArticle>>(
+      API_ENDPOINTS.NEWS_ARTICLE.BY_ID(id),
+      data
+    );
+    return response.data;
+  },
+
+  // Delete news article
+  async deleteNews(id: number): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.NEWS_ARTICLE.BY_ID(id));
+  },
+
+  // Change news status
+  async changeNewsStatus(id: number, data: ChangeNewsStatusDto): Promise<NewsArticle> {
+    const response = await apiClient.patch<ApiSingleResponse<NewsArticle>>(
+      API_ENDPOINTS.NEWS_ARTICLE.STATUS(id),
+      data
+    );
+    return response.data;
+  },
+
+  // OData: Get news with OData queries
+  async getNewsOData(query?: string): Promise<NewsArticle[]> {
+    const endpoint = query ? `${API_ENDPOINTS.NEWS_ARTICLE.BASE}?${query}` : API_ENDPOINTS.NEWS_ARTICLE.BASE;
+    const response = await apiClient.get<ApiResponse<NewsArticle>>(endpoint);
+    return response.data?.$values || [];
+  },
+
+  // Get latest news for homepage
+  async getLatestNews(limit = 10): Promise<NewsArticle[]> {
+    return this.getNewsOData(COMMON_QUERIES.LATEST_NEWS.replace('=10', `=${limit}`));
+  },
+
+  // Get active news only
+  async getActiveNews(): Promise<NewsArticle[]> {
+    return this.getNewsOData(COMMON_QUERIES.ACTIVE_NEWS_ONLY);
+  },
+
+  // Get news by category
+  async getNewsByCategory(categoryId: number, page = 1, limit = 10): Promise<NewsArticle[]> {
+    const skip = (page - 1) * limit;
+    const query = `${COMMON_QUERIES.NEWS_BY_CATEGORY(categoryId)}&$orderby=CreatedDate desc&$top=${limit}&$skip=${skip}`;
+    return this.getNewsOData(query);
+  },
+
+  // Search news
+  async searchNews(keyword: string, page = 1, limit = 10): Promise<NewsArticle[]> {
+    const skip = (page - 1) * limit;
+    const query = `$filter=contains(NewsTitle, '${keyword}') or contains(NewsTitle, '${keyword}')&$orderby=CreatedDate desc&$top=${limit}&$skip=${skip}`;
+    return this.getNewsOData(query);
+  }
+};
+
+// ===== NEWS ARTICLE TAG SERVICES =====
+
+export const newsArticleTagService = {
+  // Get tags for an article
+  async getArticleTags(articleId: number): Promise<Tag[]> {
+    const response = await apiClient.get<ApiResponse<Tag>>(
+      API_ENDPOINTS.NEWS_ARTICLE_TAG.ARTICLE_TAGS(articleId)
+    );
+    return response.data?.$values || [];
+  },
+
+  // Add tag to article
+  async addTagToArticle(articleId: number, data: AddTagToArticleDto): Promise<void> {
+    await apiClient.post(
+      API_ENDPOINTS.NEWS_ARTICLE_TAG.ARTICLE_TAGS(articleId),
+      data
+    );
+  },
+
+  // Replace all tags for an article
+  async replaceArticleTags(articleId: number, data: ReplaceTagsDto): Promise<void> {
+    await apiClient.put(
+      API_ENDPOINTS.NEWS_ARTICLE_TAG.ARTICLE_TAGS(articleId),
+      data
+    );
+  },
+
+  // Get articles by tag
+  async getArticlesByTag(tagId: number): Promise<NewsArticle[]> {
+    const response = await apiClient.get<ApiResponse<NewsArticle>>(
+      API_ENDPOINTS.NEWS_ARTICLE_TAG.TAG_ARTICLES(tagId)
+    );
+    return response.data?.$values || [];
+  },
+
+  // Add multiple tags to article
+  async addMultipleTagsToArticle(articleId: number, data: AddMultipleTagsDto): Promise<void> {
+    await apiClient.post(
+      API_ENDPOINTS.NEWS_ARTICLE_TAG.BULK_TAGS(articleId),
+      data
+    );
+  },
+
+  // Remove tag from article
+  async removeTagFromArticle(articleId: number, tagId: number): Promise<void> {
+    await apiClient.delete(
+      API_ENDPOINTS.NEWS_ARTICLE_TAG.REMOVE_TAG(articleId, tagId)
+    );
+  },
+
+  // Get popular tags statistics
+  async getPopularTags(limit = 10): Promise<TagStatistics[]> {
+    const response = await apiClient.get<ApiResponse<TagStatistics>>(
+      API_ENDPOINTS.NEWS_ARTICLE_TAG.POPULAR_TAGS,
+      { limit }
+    );
+    return response.data?.$values || [];
+  }
+};
+
+// ===== SYSTEM ACCOUNT SERVICES =====
+
+export const accountService = {
+  // Get all accounts
+  async getAllAccounts(): Promise<SystemAccount[]> {
+    const response = await apiClient.get<ApiResponse<SystemAccount>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.BASE
+    );
+    return response.data?.$values || [];
+  },
+
+  // Get account by ID
+  async getAccountById(id: number): Promise<SystemAccount> {
+    const response = await apiClient.get<ApiSingleResponse<SystemAccount>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.BY_ID(id)
+    );
+    return response.data;
+  },
+
+  // Create account
+  async createAccount(data: CreateSystemAccountDto): Promise<SystemAccount> {
+    const response = await apiClient.post<ApiSingleResponse<SystemAccount>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.BASE,
+      data
+    );
+    return response.data;
+  },
+
+  // Update account
+  async updateAccount(id: number, data: UpdateSystemAccountDto): Promise<SystemAccount> {
+    const response = await apiClient.put<ApiSingleResponse<SystemAccount>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.BY_ID(id),
+      data
+    );
+    return response.data;
+  },
+
+  // Get current user profile
+  async getProfile(): Promise<SystemAccount> {
+    const response = await apiClient.get<ApiSingleResponse<SystemAccount>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.PROFILE
+    );
+    return response.data;
+  },
+
+  // Update current user profile
+  async updateProfile(data: UpdateProfileDto): Promise<SystemAccount> {
+    const response = await apiClient.put<ApiSingleResponse<SystemAccount>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.PROFILE,
+      data
+    );
+    return response.data;
+  },
+
+  // Change password
+  async changePassword(data: ChangePasswordDto): Promise<void> {
+    await apiClient.patch(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.CHANGE_PASSWORD,
+      data
+    );
+  },
+
+  // Reset password
+  async resetPassword(id: number, data: ResetPasswordDto): Promise<void> {
+    await apiClient.patch(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.RESET_PASSWORD(id),
+      data
+    );
+  },
+
+  // Toggle account status
+  async toggleAccountStatus(id: number): Promise<SystemAccount> {
+    const response = await apiClient.patch<ApiSingleResponse<SystemAccount>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.TOGGLE_STATUS(id)
+    );
+    return response.data;
+  },
+
+  // Get account statistics
+  async getAccountStatistics(): Promise<AccountStatistics> {
+    const response = await apiClient.get<ApiSingleResponse<AccountStatistics>>(
+      API_ENDPOINTS.SYSTEM_ACCOUNT.STATISTICS
+    );
+    return response.data;
+  },
+
+  // OData: Get accounts with OData queries
+  async getAccountsOData(query?: string): Promise<SystemAccount[]> {
+    const endpoint = query ? `${API_ENDPOINTS.SYSTEM_ACCOUNT.BASE}?${query}` : API_ENDPOINTS.SYSTEM_ACCOUNT.BASE;
+    const response = await apiClient.get<ApiResponse<SystemAccount>>(endpoint);
+    return response.data?.$values || [];
+  },
+
+  // Get active accounts
+  async getActiveAccounts(): Promise<SystemAccount[]> {
+    return this.getAccountsOData(COMMON_QUERIES.ACTIVE_ACCOUNTS);
+  },
+
+  // Get accounts by role
+  async getAccountsByRole(role: AccountRole): Promise<SystemAccount[]> {
+    return this.getAccountsOData(COMMON_QUERIES.ACCOUNTS_BY_ROLE(role));
+  }
+};
+
+// ===== TAG SERVICES =====
+
+export const tagService = {
+  // Get all tags
+  async getAllTags(): Promise<Tag[]> {
+    const response = await apiClient.get<ApiResponse<Tag>>(
+      API_ENDPOINTS.TAG.BASE
+    );
+    return response.data?.$values || [];
+  },
+
+  // Get tag by ID
+  async getTagById(id: number): Promise<Tag> {
+    const response = await apiClient.get<ApiSingleResponse<Tag>>(
+      API_ENDPOINTS.TAG.BY_ID(id)
+    );
+    return response.data;
+  },
+
+  // Create tag
+  async createTag(data: CreateTagDto): Promise<Tag> {
+    const response = await apiClient.post<ApiSingleResponse<Tag>>(
+      API_ENDPOINTS.TAG.BASE,
+      data
+    );
+    return response.data;
+  },
+
+  // Update tag
+  async updateTag(id: number, data: UpdateTagDto): Promise<Tag> {
+    const response = await apiClient.put<ApiSingleResponse<Tag>>(
+      API_ENDPOINTS.TAG.BY_ID(id),
+      data
+    );
+    return response.data;
+  },
+
+  // Delete tag
+  async deleteTag(id: number): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.TAG.BY_ID(id));
+  },
+
+  // Search tags
+  async searchTags(keyword: string): Promise<Tag[]> {
+    const response = await apiClient.get<ApiResponse<Tag>>(
+      API_ENDPOINTS.TAG.SEARCH,
+      { keyword }
+    );
+    return response.data?.$values || [];
+  },
+
+  // Get tag statistics
+  async getTagStatistics(): Promise<any> {
+    const response = await apiClient.get<ApiSingleResponse<any>>(
+      API_ENDPOINTS.TAG.STATISTICS
+    );
+    return response.data;
+  },
+
+  // Get popular tags
+  async getPopularTags(limit = 10): Promise<Tag[]> {
+    const response = await apiClient.get<ApiResponse<Tag>>(
+      API_ENDPOINTS.TAG.POPULAR,
+      { limit }
+    );
+    return response.data?.$values || [];
+  },
+
+  // Create bulk tags
+  async createBulkTags(data: CreateBulkTagsDto): Promise<Tag[]> {
+    const response = await apiClient.post<ApiResponse<Tag>>(
+      API_ENDPOINTS.TAG.BULK,
+      data
+    );
+    return response.data?.$values || [];
+  },
+
+  // OData: Get tags with OData queries
+  async getTagsOData(query?: string): Promise<Tag[]> {
+    const endpoint = query ? `${API_ENDPOINTS.TAG.BASE}?${query}` : API_ENDPOINTS.TAG.BASE;
+    const response = await apiClient.get<ApiResponse<Tag>>(endpoint);
+    return response.data?.$values || [];
+  }
+};
+
+// ===== ODATA SERVICES =====
+
+export const odataService = {
+  // Get OData metadata
+  async getMetadata(): Promise<any> {
+    return await apiClient.get(API_ENDPOINTS.ODATA.METADATA);
+  },
+
+  // Get OData service document
+  async getServiceDocument(): Promise<any> {
+    return await apiClient.get(API_ENDPOINTS.ODATA.SERVICE_DOCUMENT);
+  }
+};
+
+// ===== SEARCH SERVICES =====
+
+export const searchService = {
+  // Universal search across news articles
+  async searchAll(params: SearchParams): Promise<{
+    articles: NewsArticle[];
+    totalCount: number;
+  }> {
+    const {
+      keyword,
+      categoryId,
+      tagIds,
+      status,
+      pageNumber = 1,
+      pageSize = 10,
+      sortBy = 'CreatedDate',
+      sortDirection = 'desc'
+    } = params;
+
+    const skip = (pageNumber - 1) * pageSize;
+    const filters: string[] = [];
+
+    if (keyword) {
+      filters.push(`contains(NewsTitle, '${keyword}') or contains(NewsContent, '${keyword}')`);
+    }
+
+    if (categoryId) {
+      filters.push(`CategoryId eq ${categoryId}`);
+    }
+
+    if (status !== undefined) {
+      filters.push(`newsStatus eq ${status}`);
+    }
+
+    const filterQuery = filters.length > 0 ? `$filter=${filters.join(' and ')}` : '';
+    const orderQuery = `$orderby=${sortBy} ${sortDirection}`;
+    const topQuery = `$top=${pageSize}`;
+    const skipQuery = `$skip=${skip}`;
+    const countQuery = '$count=true';
+
+    const queryParams = [filterQuery, orderQuery, topQuery, skipQuery, countQuery]
+      .filter(Boolean)
+      .join('&');
+
+    const articles = await newsService.getNewsOData(queryParams);
     
-    return response.data?.$values?.length || 0;
+    // Get total count (this would need to be implemented based on your API response structure)
+    const totalCount = articles.length; // This is a placeholder - adjust based on actual API response
+
+    return {
+      articles,
+      totalCount
+    };
   }
 }; 

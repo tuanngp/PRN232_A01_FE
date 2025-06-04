@@ -1,9 +1,9 @@
 // Authentication hooks for FU News System
 // Provides authentication state management and operations
 
-import { useState, useEffect, useCallback, useContext, createContext } from 'react';
-import { LoginRequest, LoginResponse } from '@/types/api';
 import { authService } from '@/lib/api-services';
+import { LoginRequest } from '@/types/api';
+import { useCallback, useEffect, useState } from 'react';
 
 interface AuthContextType {
   isAuthenticated: boolean;

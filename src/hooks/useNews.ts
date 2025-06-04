@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { NewsArticle } from '@/types/api';
-import { newsService, utilityService } from '@/lib/api-services';
+import { newsService, searchService } from '@/lib/api-services';
 
 interface UseNewsResult {
   news: NewsArticle[];
@@ -83,13 +83,15 @@ export function useNewsByCategory(
       setLoading(true);
       setError(null);
       
-      const [newsData, count] = await Promise.all([
-        newsService.getNewsByCategory(categoryId, page, limit),
-        utilityService.getNewsCount(categoryId)
-      ]);
+      // Use searchService to get both articles and count
+      const result = await searchService.searchAll({
+        categoryId,
+        pageNumber: page,
+        pageSize: limit
+      });
       
-      setNews(newsData);
-      setTotalCount(count);
+      setNews(result.articles);
+      setTotalCount(result.totalCount);
       setCurrentPage(page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch news');
@@ -210,13 +212,15 @@ export function useNewsSearch(
       setLoading(true);
       setError(null);
       
-      const [newsData, count] = await Promise.all([
-        newsService.searchNews(searchKeyword, page, limit),
-        utilityService.getNewsCount(undefined, searchKeyword)
-      ]);
+      // Use searchService for both search and count
+      const result = await searchService.searchAll({
+        keyword: searchKeyword,
+        pageNumber: page,
+        pageSize: limit
+      });
       
-      setNews(newsData);
-      setTotalCount(count);
+      setNews(result.articles);
+      setTotalCount(result.totalCount);
       setCurrentPage(page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search news');
@@ -274,8 +278,9 @@ export function useFeaturedNews(limit = 5): UseNewsResult {
     try {
       setLoading(true);
       setError(null);
-      const data = await newsService.getFeaturedNews();
-      setNews(data.slice(0, limit));
+      // Use getLatestNews as featured news since getFeaturedNews doesn't exist
+      const data = await newsService.getLatestNews(limit);
+      setNews(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch featured news');
       setNews([]);
@@ -316,15 +321,14 @@ export function useAllNewsAdmin(
       setLoading(true);
       setError(null);
       
-      // For admin, get all news including inactive
-      const newsData = await newsService.getAllNews(page, limit);
+      // For admin, get all news using searchService with no filters
+      const result = await searchService.searchAll({
+        pageNumber: page,
+        pageSize: limit
+      });
       
-      // Note: For count, you might need a separate admin endpoint
-      // For now, using the same count logic
-      const count = await utilityService.getNewsCount();
-      
-      setNews(newsData);
-      setTotalCount(count);
+      setNews(result.articles);
+      setTotalCount(result.totalCount);
       setCurrentPage(page);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch news');

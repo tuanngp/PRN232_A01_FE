@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { NewsArticle, Category } from '@/types/api';
 import { useNewsSearch } from '@/hooks/useNews';
 import { categoryService } from '@/lib/api-services';
+import { Category } from '@/types/api';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 
 interface SearchFilters {
   category?: number;
@@ -330,7 +330,7 @@ function SearchPageContent() {
                           {/* Meta Information */}
                           <div className="flex items-center gap-3 mb-2">
                             <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
-                              {article.categoryName}
+                              {article.category?.categoryName}
                             </span>
                             <span className="text-xs text-slate-500">
                               {timeAgo(article.createdDate)}

@@ -223,7 +223,7 @@ export default function ArticleDetailPage() {
             <Link href="/" className="hover:text-blue-600 transition-colors">Home</Link>
             <span className="text-slate-400">/</span>
             <Link href={`/category/${article.categoryId}`} className="hover:text-blue-600 transition-colors">
-              {article.categoryName}
+              {article.category?.categoryName || 'Uncategorized'}
             </Link>
             <span className="text-slate-400">/</span>
             <span className="text-slate-500 truncate">{article.newsTitle}</span>
@@ -235,7 +235,7 @@ export default function ArticleDetailPage() {
             <div className="p-6 pb-4">
               <div className="flex items-center gap-4 mb-4">
                 <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-                  {article.categoryName}
+                  {article.category?.categoryName || 'Uncategorized'}
                 </span>
                 <span className="text-slate-500 text-sm">{timeAgo(article.createdDate)}</span>
                 {article.createdBy && (

@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { useNewsByCategory } from '@/hooks/useNews';
 import { useActiveCategories, useCategoryById } from '@/hooks/useCategories';
+import { useNewsByCategory } from '@/hooks/useNews';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
 // Utility function to format time ago
 const timeAgo = (dateString: string) => {
@@ -262,7 +262,7 @@ export default function CategoryPage() {
                     />
                     <div className="absolute top-3 left-3">
                       <span className="px-2 py-1 bg-white/90 text-slate-700 text-xs font-medium rounded-full">
-                        {article.categoryName}
+                        {article.category?.categoryName || 'Uncategorized'}
                       </span>
                     </div>
                   </div>

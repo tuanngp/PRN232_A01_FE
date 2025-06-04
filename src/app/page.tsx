@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { NewsArticle } from '@/types/api';
-import { useLatestNews, useFeaturedNews } from '@/hooks/useNews';
 import { useActiveCategories } from '@/hooks/useCategories';
+import { useFeaturedNews, useLatestNews } from '@/hooks/useNews';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 // Utility function to format time ago
 const timeAgo = (dateString: string) => {
@@ -178,7 +177,7 @@ export default function HomePage() {
               <div className="relative p-8 text-white z-10">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
-                    {currentFeaturedNews.categoryName}
+                    {currentFeaturedNews.category?.categoryName}
                   </span>
                   <span className="text-white/80 text-sm">
                     {timeAgo(currentFeaturedNews.createdDate)}
