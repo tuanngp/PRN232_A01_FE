@@ -63,8 +63,8 @@ export function useAuth(): UseAuthResult {
       
       setIsAuthenticated(true);
       setUser({
-        accountName: response.accountName,
-        accountRole: response.accountRole
+        accountName: response.user.accountName,
+        accountRole: response.user.accountRole
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';

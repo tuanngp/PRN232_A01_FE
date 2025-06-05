@@ -2,239 +2,316 @@
 
 import { AdminRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { ROUTES } from '@/constants/routes';
-import { useAuth } from '@/context/AuthContext';
+import { accountService, categoryService, newsService, tagService } from '@/lib/api-services';
+import { AccountRole, NewsArticle, NewsStatus } from '@/types/api';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface DashboardStats {
-  totalNews: number;
-  activeNews: number;
+  totalArticles: number;
+  activeArticles: number;
+  inactiveArticles: number;
   totalCategories: number;
+  activeCategories: number;
   totalTags: number;
   totalAccounts: number;
-  monthlyViews: number;
+  activeAccounts: number;
+  adminCount: number;
+  staffCount: number;
+  lecturerCount: number;
 }
 
-// Mock data for dashboard
-const mockStats: DashboardStats = {
-  totalNews: 125,
-  activeNews: 118,
-  totalCategories: 8,
-  totalTags: 25,
-  totalAccounts: 12,
-  monthlyViews: 15420
-};
-
-const mockRecentNews = [
-  {
-    id: 1,
-    title: "FPT University mở rộng chương trình học bổng năm 2025",
-    author: "Admin FPT",
-    status: "Active",
-    createdDate: "2025-01-15T10:00:00Z"
-  },
-  {
-    id: 2,
-    title: "Khởi động cuộc thi lập trình FPT CodeWar 2025",
-    author: "Staff Tech",
-    status: "Active",
-    createdDate: "2025-01-14T15:30:00Z"
-  },
-  {
-    id: 3,
-    title: "Lễ tốt nghiệp học kỳ Fall 2024",
-    author: "Staff Events",
-    status: "Draft",
-    createdDate: "2025-01-13T09:00:00Z"
-  }
-];
-
-export default function AdminDashboard() {
-  const { user, isAuthenticated } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>(mockStats);
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalArticles: 0,
+    activeArticles: 0,
+    inactiveArticles: 0,
+    totalCategories: 0,
+    activeCategories: 0,
+    totalTags: 0,
+    totalAccounts: 0,
+    activeAccounts: 0,
+    adminCount: 0,
+    staffCount: 0,
+    lecturerCount: 0
+  });
+  const [recentArticles, setRecentArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call for dashboard data
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setStats(mockStats);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchDashboardData();
+  }, []);
 
-    if (isAuthenticated) {
-      fetchDashboardData();
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all data in parallel
+      const [articles, categories, tags, accounts] = await Promise.all([
+        newsService.getAllNews(),
+        categoryService.getAllCategories(),
+        tagService.getAllTags(),
+        accountService.getAllAccounts()
+      ]);
+
+      // Calculate statistics
+      const dashboardStats: DashboardStats = {
+        totalArticles: articles.length,
+        activeArticles: articles.filter(a => a.newsStatus === NewsStatus.Active).length,
+        inactiveArticles: articles.filter(a => a.newsStatus === NewsStatus.Inactive).length,
+        totalCategories: categories.length,
+        activeCategories: categories.filter(c => c.isActive).length,
+        totalTags: tags.length,
+        totalAccounts: accounts.length,
+        activeAccounts: accounts.filter(a => a.isActive).length,
+        adminCount: accounts.filter(a => a.accountRole === AccountRole.Admin).length,
+        staffCount: accounts.filter(a => a.accountRole === AccountRole.Staff).length,
+        lecturerCount: accounts.filter(a => a.accountRole === AccountRole.Lecturer).length
+      };
+
+      setStats(dashboardStats);
+
+      // Get recent articles (last 5)
+      const sortedArticles = articles
+        .sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
+        .slice(0, 5);
+      setRecentArticles(sortedArticles);
+
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      setError('Failed to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  }, [isAuthenticated]);
+  };
+
+  const StatCard = ({ title, value, icon, color, href }: {
+    title: string;
+    value: number;
+    icon: string;
+    color: string;
+    href?: string;
+  }) => {
+    const content = (
+      <div className={`bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-md transition-shadow ${href ? 'cursor-pointer' : ''}`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-gray-600 text-sm font-medium">{title}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+          </div>
+          <div className={`p-3 rounded-full ${color}`}>
+            <span className="material-icons text-white">{icon}</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    return href ? (
+      <Link href={href}>
+        {content}
+      </Link>
+    ) : content;
+  };
+
+  if (loading) {
+    return (
+      <AdminRoute>
+        <AdminLayout>
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 bg-gray-300 rounded w-1/4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-300 rounded"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-gray-300 rounded"></div>
+          </div>
+        </AdminLayout>
+      </AdminRoute>
+    );
+  }
 
   return (
     <AdminRoute>
       <AdminLayout>
-        {/* Dashboard Header */}
-        <div className="mb-8">
-          <h1 className="text-black text-4xl font-bold leading-tight mb-2">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.accountName}</p>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="skeleton h-32" />
-            ))}
+        <div className="space-y-8">
+          {/* Header */}
+          <div>
+            <h1 className="text-black text-4xl font-bold leading-tight">Dashboard</h1>
+            <p className="text-gray-600 mt-2">Welcome to FU News Management System</p>
           </div>
-        ) : (
-          <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <span className="material-icons text-blue-600">article</span>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Total News</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalNews}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <span className="material-icons text-green-600">check_circle</span>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Active News</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.activeNews}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <span className="material-icons text-purple-600">category</span>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Categories</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.totalCategories}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <span className="material-icons text-orange-600">visibility</span>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Monthly Views</p>
-                      <p className="text-2xl font-bold text-gray-900">{stats.monthlyViews.toLocaleString()}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Error Display */}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <span className="material-icons text-red-500 mr-2">error</span>
+                <p className="text-red-700">{error}</p>
+                <button
+                  onClick={fetchDashboardData}
+                  className="ml-auto text-red-600 hover:text-red-800 underline"
+                >
+                  Retry
+                </button>
+              </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Link href={ROUTES.ADMIN_NEWS_CREATE || '/admin/news/create'}>
-                      <Button className="w-full" variant="primary">
-                        <span className="material-icons mr-2">add_circle</span>
-                        Create News
-                      </Button>
-                    </Link>
-                    
-                    <Link href={ROUTES.ADMIN_CATEGORIES || '/admin/categories'}>
-                      <Button className="w-full" variant="outline">
-                        <span className="material-icons mr-2">category</span>
-                        Manage Categories
-                      </Button>
-                    </Link>
-                    
-                    <Link href={ROUTES.ADMIN_TAGS || '/admin/tags'}>
-                      <Button className="w-full" variant="outline">
-                        <span className="material-icons mr-2">sell</span>
-                        Manage Tags
-                      </Button>
-                    </Link>
-                    
-                    <Link href={ROUTES.ADMIN_ACCOUNTS || '/admin/accounts'}>
-                      <Button className="w-full" variant="outline">
-                        <span className="material-icons mr-2">people</span>
-                        Manage Users
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Articles Stats */}
+            <StatCard
+              title="Total Articles"
+              value={stats.totalArticles}
+              icon="article"
+              color="bg-blue-500"
+              href="/admin/news"
+            />
+            <StatCard
+              title="Active Articles"
+              value={stats.activeArticles}
+              icon="visibility"
+              color="bg-green-500"
+              href="/admin/news"
+            />
+            <StatCard
+              title="Categories"
+              value={stats.totalCategories}
+              icon="category"
+              color="bg-purple-500"
+              href="/admin/categories"
+            />
+            <StatCard
+              title="Tags"
+              value={stats.totalTags}
+              icon="local_offer"
+              color="bg-orange-500"
+              href="/admin/tags"
+            />
 
-              {/* Recent News */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Articles</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockRecentNews.map((news) => (
-                      <div key={news.id} className="flex items-start space-x-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50">
-                        <span className="material-icons text-gray-400 mt-1">article</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {news.title}
-                          </p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-xs text-gray-500">
-                              By {news.author}
-                            </span>
-                            <span className={`
-                              inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                              ${news.status === 'Active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-gray-100 text-gray-700'
-                              }
-                            `}>
-                              {news.status}
-                            </span>
-                          </div>
+            {/* Account Stats */}
+            <StatCard
+              title="Total Accounts"
+              value={stats.totalAccounts}
+              icon="people"
+              color="bg-indigo-500"
+              href="/admin/accounts"
+            />
+            <StatCard
+              title="Active Accounts"
+              value={stats.activeAccounts}
+              icon="person_check"
+              color="bg-green-500"
+              href="/admin/accounts"
+            />
+            <StatCard
+              title="Admin Users"
+              value={stats.adminCount}
+              icon="admin_panel_settings"
+              color="bg-red-500"
+            />
+            <StatCard
+              title="Staff Users"
+              value={stats.staffCount}
+              icon="badge"
+              color="bg-blue-500"
+            />
+          </div>
+
+          {/* Recent Articles */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Recent Articles</h2>
+                <Link
+                  href="/admin/news"
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  View All
+                </Link>
+              </div>
+            </div>
+            <div className="p-6">
+              {recentArticles.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <span className="material-icons text-4xl text-gray-300 mb-2">article</span>
+                  <p>No articles found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentArticles.map((article) => (
+                    <div key={article.newsArticleId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 truncate">{article.newsTitle}</h3>
+                        <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
+                          <span>{article.category?.categoryName || 'No Category'}</span>
+                          <span>•</span>
+                          <span>{new Date(article.createdDate).toLocaleDateString()}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-4">
-                    <Link href="/admin/news">
-                      <Button variant="outline" className="w-full">
-                        View All Articles
-                      </Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+                      <div className="flex items-center space-x-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          article.newsStatus === NewsStatus.Active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {article.newsStatus === NewsStatus.Active ? 'Active' : 'Inactive'}
+                        </span>
+                        <Link
+                          href={`/admin/news/edit/${article.newsArticleId}`}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <span className="material-icons text-sm">edit</span>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </>
-        )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Link
+                  href="/admin/news/create"
+                  className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <span className="material-icons text-blue-600">add_circle</span>
+                  <span className="font-medium text-gray-900">New Article</span>
+                </Link>
+                <Link
+                  href="/admin/categories/create"
+                  className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <span className="material-icons text-purple-600">add_circle</span>
+                  <span className="font-medium text-gray-900">New Category</span>
+                </Link>
+                <Link
+                  href="/admin/tags/create"
+                  className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <span className="material-icons text-orange-600">add_circle</span>
+                  <span className="font-medium text-gray-900">New Tag</span>
+                </Link>
+                <Link
+                  href="/admin/accounts/create"
+                  className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <span className="material-icons text-indigo-600">add_circle</span>
+                  <span className="font-medium text-gray-900">New Account</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </AdminLayout>
     </AdminRoute>
   );
