@@ -25,7 +25,7 @@ export default function AdminTagsPage() {
       setError(null);
       
       // Use OData query to get tags with related data
-      const query = '$orderby=TagName asc';
+      const query = '$orderby=CreatedDate desc';
       const data = await tagService.getTagsOData(query);
       setTags(data);
     } catch (error) {

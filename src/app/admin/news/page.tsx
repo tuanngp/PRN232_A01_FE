@@ -25,7 +25,7 @@ export default function AdminNewsPage() {
       setError(null);
       
       // Use OData query to get articles with related data
-      const query = '$expand=Category,NewsArticleTags($expand=Tag)';
+      const query = '$orderby=CreatedDate desc';
       const data = await newsService.getNewsOData(query);
       setArticles(data);
     } catch (error) {

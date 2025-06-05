@@ -25,7 +25,7 @@ export default function AdminCategoriesPage() {
       setError(null);
       
       // Use OData query to get categories with related data
-      const query = '$expand=ParentCategory,SubCategories&$orderby=CategoryName asc';
+      const query = '$orderby=CreatedDate desc';
       const data = await categoryService.getCategoriesOData(query);
       setCategories(data);
     } catch (error) {
