@@ -1,6 +1,6 @@
 'use client';
 
-import { useActiveCategories } from '@/hooks/useCategories';
+import Header from '@/components/layout/Header';
 import { useFeaturedNews, useLatestNews } from '@/hooks/useNews';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -27,7 +27,6 @@ export default function HomePage() {
 
   // Use the new hooks for data fetching
   const { news: latestNews, loading: newsLoading, error: newsError, refreshNews } = useLatestNews(12);
-  const { categories, loading: categoriesLoading, error: categoriesError } = useActiveCategories();
   const { news: featuredNews, loading: featuredLoading, error: featuredError } = useFeaturedNews(5);
 
   // Auto-slide for hero banner
@@ -42,11 +41,11 @@ export default function HomePage() {
   }, [featuredNews.length]);
 
   // Loading state
-  const isLoading = newsLoading || categoriesLoading || featuredLoading;
+  const isLoading = newsLoading || featuredLoading;
   
   // Error state
-  const hasError = newsError || categoriesError || featuredError;
-  const errorMessage = newsError || categoriesError || featuredError;
+  const hasError = newsError || featuredError;
+  const errorMessage = newsError || featuredError;
 
   if (isLoading) {
     return (
@@ -124,7 +123,7 @@ export default function HomePage() {
     headline: "Stay informed with the latest news and updates from around the world. Our team brings you comprehensive coverage.",
     newsContent: "Stay informed with the latest news and updates from around the world. Our team brings you comprehensive coverage.",
     categoryId: 1,
-    categoryName: "Featured",
+    category: { categoryId: 1, categoryName: "Featured", isActive: true },
     createdDate: new Date().toISOString(),
     newsStatus: 1,
     tags: []
@@ -133,39 +132,7 @@ export default function HomePage() {
   return (
     <div className="bg-slate-50 min-h-screen" style={{ fontFamily: 'Newsreader, "Noto Sans", sans-serif' }}>
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-slate-200 bg-white px-10 py-4 shadow-sm">
-        <div className="flex items-center gap-3 text-slate-900">
-          <div className="text-2xl text-blue-600">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z" fill="currentColor"></path>
-            </svg>
-          </div>
-          <h2 className="text-slate-900 text-2xl font-bold leading-tight tracking-tight">FU News</h2>
-        </div>
-        
-        <nav className="flex flex-1 justify-center">
-          <ul className="flex items-center gap-8">
-            <li><Link className="text-slate-700 hover:text-blue-600 text-base font-medium leading-normal transition-colors" href="/">Home</Link></li>
-            {categories.map((category) => (
-              <li key={category.categoryId}>
-                <Link className="text-slate-700 hover:text-blue-600 text-base font-medium leading-normal transition-colors" href={`/category/${category.categoryId}`}>
-                  {category.categoryName}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        
-        <div className="flex items-center gap-3">
-          <Link href="/search" aria-label="Search" className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-blue-600 transition-colors">
-            <span className="material-icons text-xl">search</span>
-          </Link>
-          <button aria-label="Bookmarks" className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-blue-600 transition-colors">
-            <span className="material-icons text-xl">bookmark_border</span>
-          </button>
-          <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-slate-200 hover:border-blue-500 transition-all" style={{backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDcD-GSt8Hsov6Ws0vEw54qAjzUkqNgjgy5QCk6lrfFbm1d1gXo3EpRpWg7VPffZEQ3sDsdvnOGRjIXxH9A1mBu64HiB3_SD6aIACyN-Dg2a-rvmsn1Y7uQkbBfm8-YjT6A7jIAWwyKk03veWY6J6m018UGdTpu3cNE9EAp1hqwwOg8qi9eOnsMSkWMI640WaZsWG5_cSnvEw8jrKXNikCwDq0ug3q25lLQ4wI1ZnuMbN3B_wpF8TjLKKqOwTG1NVt2nGrIQzySyEM")'}}></div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-8">
@@ -177,7 +144,7 @@ export default function HomePage() {
               <div className="relative p-8 text-white z-10">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded-full">
-                    {currentFeaturedNews.category?.categoryName}
+                    {currentFeaturedNews.category?.categoryName || 'Featured'}
                   </span>
                   <span className="text-white/80 text-sm">
                     {timeAgo(currentFeaturedNews.createdDate)}
@@ -242,7 +209,7 @@ export default function HomePage() {
                       />
                       <div className="absolute top-3 left-3">
                         <span className="px-2 py-1 bg-white/90 text-slate-700 text-xs font-medium rounded-full">
-                          {article.categoryName}
+                          {article.category?.categoryName || 'News'}
                         </span>
                       </div>
                     </div>

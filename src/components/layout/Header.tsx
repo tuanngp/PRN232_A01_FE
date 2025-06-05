@@ -1,192 +1,183 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { ROUTES } from '@/constants/routes';
+import { useActiveCategories } from '@/hooks/useCategories';
 import { AccountRole } from '@/types/api';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-interface HeaderProps {
-  categories?: Array<{
-    categoryId: number;
-    categoryName: string;
-  }>;
-}
+export default function Header() {
+  const router = useRouter();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { categories } = useActiveCategories();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-export function Header({ categories = [] }: HeaderProps) {
-  const { user, isAuthenticated, logout } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const handleLogout = async () => {
+    await logout();
+    setShowUserMenu(false);
+    router.push('/');
+  };
 
-  const handleLogout = () => {
-    logout();
-    setIsUserMenuOpen(false);
+  const getUserRoleText = (role?: AccountRole) => {
+    switch (role) {
+      case AccountRole.Admin:
+        return 'Administrator';
+      case AccountRole.Staff:
+        return 'Staff';
+      case AccountRole.Lecturer:
+        return 'Lecturer';
+      default:
+        return 'User';
+    }
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
-      {/* Top Bar */}
-      <div className="bg-blue-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-10 text-sm">
-            <div className="flex items-center space-x-4">
-              <span>Tin tức FPT University</span>
-              <span>•</span>
-              <span>Cập nhật 24/7</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              {isAuthenticated ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-2 hover:text-blue-200 transition-colors"
-                  >
-                    <span>Xin chào, {user?.accountName}</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white text-gray-900 rounded-lg shadow-lg border border-gray-200 z-50">
-                      <div className="py-1">
-                        {user?.accountRole === AccountRole.Admin && (
-                          <Link
-                            href={ROUTES.ADMIN_DASHBOARD}
-                            className="block px-4 py-2 text-sm hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            Quản trị hệ thống
-                          </Link>
-                        )}
-                        {user?.accountRole === AccountRole.Staff && (
-                          <Link
-                            href={ROUTES.STAFF_DASHBOARD}
-                            className="block px-4 py-2 text-sm hover:bg-gray-100"
-                            onClick={() => setIsUserMenuOpen(false)}
-                          >
-                            Bảng điều khiển
-                          </Link>
-                        )}
-                        <button
-                          onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-600"
-                        >
-                          Đăng xuất
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  href={ROUTES.LOGIN}
-                  className="hover:text-blue-200 transition-colors"
-                >
-                  Đăng nhập
-                </Link>
-              )}
-            </div>
-          </div>
+    <header className="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-slate-200 bg-white px-10 py-4 shadow-sm">
+      {/* Logo */}
+      <div className="flex items-center gap-3 text-slate-900">
+        <div className="text-2xl text-blue-600">
+          <svg className="h-8 w-8" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 42.4379C4 42.4379 14.0962 36.0744 24 41.1692C35.0664 46.8624 44 42.2078 44 42.2078L44 7.01134C44 7.01134 35.068 11.6577 24.0031 5.96913C14.0971 0.876274 4 7.27094 4 7.27094L4 42.4379Z" fill="currentColor"></path>
+          </svg>
         </div>
+        <Link href="/" className="text-slate-900 text-2xl font-bold leading-tight tracking-tight hover:text-blue-600 transition-colors">
+          FU News
+        </Link>
       </div>
-
-      {/* Main Header */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href={ROUTES.HOME} className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">FU</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">FU News</h1>
-              <p className="text-xs text-gray-500">Tin tức FPT University</p>
-            </div>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link
-              href={ROUTES.HOME}
-              className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-            >
-              Trang chủ
+      
+      {/* Navigation */}
+      <nav className="flex flex-1 justify-center">
+        <ul className="flex items-center gap-8">
+          <li>
+            <Link className="text-slate-700 hover:text-blue-600 text-base font-medium leading-normal transition-colors" href="/">
+              Home
             </Link>
-            
-            {/* Categories Dropdown */}
-            <div className="relative group">
-              <button className="text-gray-700 hover:text-blue-600 font-medium transition-colors flex items-center space-x-1">
-                <span>Danh mục</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              <div className="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                <div className="py-2">
-                  {categories.map((category) => (
-                    <Link
-                      key={category.categoryId}
-                      href={ROUTES.CATEGORY(category.categoryId)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600"
-                    >
-                      {category.categoryName}
-                    </Link>
-                  ))}
-                  {categories.length === 0 && (
-                    <div className="px-4 py-2 text-sm text-gray-500">
-                      Không có danh mục nào
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <Link
-              href={ROUTES.SEARCH}
-              className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-            >
-              Tìm kiếm
-            </Link>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
-          <div className="px-4 py-2 space-y-1">
-            <Link
-              href={ROUTES.HOME}
-              className="block px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Trang chủ
-            </Link>
-            
-            {categories.map((category) => (
-              <Link
-                key={category.categoryId}
-                href={ROUTES.CATEGORY(category.categoryId)}
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg"
-                onClick={() => setIsMobileMenuOpen(false)}
+          </li>
+          {categories.map((category) => (
+            <li key={category.categoryId}>
+              <Link 
+                className="text-slate-700 hover:text-blue-600 text-base font-medium leading-normal transition-colors" 
+                href={`/category/${category.categoryId}`}
               >
                 {category.categoryName}
               </Link>
-            ))}
+            </li>
+          ))}
+        </ul>
+      </nav>
+      
+      {/* User Actions */}
+      <div className="flex items-center gap-3">
+        <Link 
+          href="/search" 
+          aria-label="Search" 
+          className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-blue-600 transition-colors"
+        >
+          <span className="material-icons text-xl">search</span>
+        </Link>
+        
+        {isAuthenticated && user ? (
+          <div className="relative">
+            {/* User Menu Button */}
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  {user.accountName.charAt(0).toUpperCase()}
+                </div>
+                <div className="text-left hidden sm:block">
+                  <div className="text-sm font-medium text-slate-900">{user.accountName}</div>
+                  <div className="text-xs text-slate-500">{getUserRoleText(user.accountRole)}</div>
+                </div>
+              </div>
+              <span className="material-icons text-slate-400 text-lg">
+                {showUserMenu ? 'expand_less' : 'expand_more'}
+              </span>
+            </button>
+
+            {/* Dropdown Menu */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                {/* User Info */}
+                <div className="px-4 py-3 border-b border-slate-100">
+                  <div className="text-sm font-medium text-slate-900">{user.accountName}</div>
+                  <div className="text-xs text-slate-500">{user.accountEmail}</div>
+                  <div className="text-xs text-blue-600 mt-1">{getUserRoleText(user.accountRole)}</div>
+                </div>
+
+                {/* Menu Items */}
+                <div className="py-1">
+                  {user.accountRole === AccountRole.Admin && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <span className="material-icons text-blue-600 text-lg">admin_panel_settings</span>
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <span className="material-icons text-slate-600 text-lg">person</span>
+                    Profile
+                  </Link>
+                  
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <span className="material-icons text-slate-600 text-lg">settings</span>
+                    Settings
+                  </Link>
+                </div>
+
+                {/* Logout */}
+                <div className="border-t border-slate-100 pt-1">
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <span className="material-icons text-red-600 text-lg">logout</span>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        ) : (
+          /* Guest Actions */
+          <>
+            <Link 
+              href="/auth/login" 
+              className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-blue-600 transition-colors"
+            >
+              Login
+            </Link>
+            <Link 
+              href="/auth/register" 
+              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Register
+            </Link>
+          </>
+        )}
+      </div>
+
+      {/* Overlay to close menu when clicking outside */}
+      {showUserMenu && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowUserMenu(false)}
+        />
       )}
     </header>
   );

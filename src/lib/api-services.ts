@@ -41,7 +41,7 @@ import { apiClient } from './api';
 export const authService = {
   // Login
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<ApiSingleResponse<LoginResponse>>(
+    const response = await apiClient.post<ApiSingleResponse<any>>(
       API_ENDPOINTS.AUTH.LOGIN,
       credentials
     );
@@ -50,12 +50,41 @@ export const authService = {
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('refreshToken', response.data.refreshToken);
-      localStorage.setItem('accountRole', response.data.user.accountRole.toString());
+      
+      // Convert role string to number
+      let roleNumber: number;
+      if (response.data.user.accountRole === 'Admin') {
+        roleNumber = 0;
+      } else if (response.data.user.accountRole === 'Staff') {
+        roleNumber = 1;
+      } else if (response.data.user.accountRole === 'Lecturer') {
+        roleNumber = 2;
+      } else {
+        roleNumber = 1; // Default to Staff
+      }
+      
+      localStorage.setItem('accountRole', roleNumber.toString());
       localStorage.setItem('accountName', response.data.user.accountName);
       localStorage.setItem('accountId', response.data.user.accountId.toString());
     }
     
-    return response.data;
+    // Convert the response to match our LoginResponse interface
+    const loginResponse: LoginResponse = {
+      accessToken: response.data.accessToken,
+      refreshToken: response.data.refreshToken,
+      user: {
+        accountId: response.data.user.accountId,
+        accountName: response.data.user.accountName,
+        accountEmail: response.data.user.accountEmail,
+        accountRole: response.data.user.accountRole === 'Admin' ? 0 : 
+                    response.data.user.accountRole === 'Staff' ? 1 : 
+                    response.data.user.accountRole === 'Lecturer' ? 2 : 1
+      },
+      accessTokenExpires: response.data.accessTokenExpires,
+      refreshTokenExpires: response.data.refreshTokenExpires
+    };
+    
+    return loginResponse;
   },
 
   // Refresh token (automatic)

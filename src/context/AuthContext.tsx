@@ -1,22 +1,16 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { LoginResponse, AccountRole } from '@/types/api';
+import { authService } from '@/lib/api-services';
 import { storage } from '@/lib/utils';
-import { apiClient } from '@/lib/api';
-import { API_ENDPOINTS } from '@/constants/api';
-
-interface User {
-  accountName: string;
-  accountRole: AccountRole;
-}
+import { LoginRequest, UserInfo } from '@/types/api';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface AuthContextType {
-  user: User | null;
+  user: UserInfo | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  login: (credentials: LoginRequest) => Promise<void>;
+  logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
 }
 
@@ -27,49 +21,71 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = !!user && authService.isAuthenticated();
 
   // Check existing authentication on mount
   useEffect(() => {
     const initAuth = async () => {
-      const accessToken = storage.get('accessToken');
-      const accountName = storage.get('accountName');
-      const accountRole = storage.get('accountRole');
-
-      if (accessToken && accountName && accountRole) {
-        setUser({
-          accountName,
-          accountRole: parseInt(accountRole) as AccountRole,
-        });
+      try {
+        const accessToken = storage.get('accessToken');
+        
+        if (accessToken) {
+          // Verify token is still valid
+          const isValid = await authService.checkAuth();
+          
+          if (isValid) {
+            // Get current user from localStorage or API
+            const currentUser = authService.getCurrentUser();
+            if (currentUser) {
+              setUser({
+                accountId: currentUser.accountId,
+                accountName: currentUser.accountName,
+                accountEmail: storage.get('accountEmail') || '',
+                accountRole: currentUser.accountRole
+              });
+            } else {
+              // If localStorage is incomplete, fetch user profile
+              try {
+                const profile = await authService.getProfile();
+                setUser({
+                  accountId: profile.accountId,
+                  accountName: profile.accountName,
+                  accountEmail: profile.accountEmail,
+                  accountRole: profile.accountRole
+                });
+              } catch {
+                // If profile fetch fails, clear invalid session
+                await logout();
+              }
+            }
+          } else {
+            // Token invalid, clear session
+            await logout();
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        await logout();
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (credentials: LoginRequest): Promise<void> => {
     try {
       setIsLoading(true);
-      const response = await apiClient.post<LoginResponse>(API_ENDPOINTS.LOGIN, {
-        email,
-        password,
-      });
-
-      // Store tokens and user info
-      storage.set('accessToken', response.accessToken);
-      storage.set('refreshToken', response.refreshToken);
-      storage.set('accountName', response.accountName);
-      storage.set('accountRole', response.accountRole.toString());
-
-      setUser({
-        accountName: response.accountName,
-        accountRole: response.accountRole,
-      });
+      const response = await authService.login(credentials);
+      
+      // Store additional user data
+      storage.set('accountEmail', response.user.accountEmail);
+      
+      setUser(response.user);
     } catch (error) {
       throw error;
     } finally {
@@ -77,46 +93,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = () => {
-    // Clear tokens and user info
-    storage.remove('accessToken');
-    storage.remove('refreshToken');
-    storage.remove('accountName');
-    storage.remove('accountRole');
-
-    setUser(null);
-
-    // Optionally call revoke token API
-    const refreshToken = storage.get('refreshToken');
-    if (refreshToken) {
-      apiClient.post(API_ENDPOINTS.REVOKE_TOKEN, { refreshToken }).catch(() => {
-        // Ignore errors on logout
-      });
-    }
-
-    // Redirect to home page
-    if (typeof window !== 'undefined') {
-      window.location.href = '/';
+  const logout = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      await authService.logout();
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local state even if API call fails
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+      
+      // Redirect to home page
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     }
   };
 
   const refreshToken = async (): Promise<void> => {
     try {
-      const refreshTokenValue = storage.get('refreshToken');
-      if (!refreshTokenValue) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await apiClient.post<LoginResponse>(API_ENDPOINTS.REFRESH_TOKEN, {
-        refreshToken: refreshTokenValue,
-      });
-
-      // Update tokens
-      storage.set('accessToken', response.accessToken);
-      storage.set('refreshToken', response.refreshToken);
+      await authService.refreshToken();
     } catch (error) {
       // If refresh fails, logout user
-      logout();
+      await logout();
       throw error;
     }
   };

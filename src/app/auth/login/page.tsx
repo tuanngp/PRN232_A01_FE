@@ -1,12 +1,14 @@
 'use client';
 
+import { useAuth } from '@/context/AuthContext';
+import { ApiError } from '@/lib/api';
+import { authService } from '@/lib/api-services';
+import { AccountRole, LoginRequest } from '@/types/api';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 
-interface LoginForm {
-  email: string;
-  password: string;
+interface LoginForm extends LoginRequest {
   remember: boolean;
 }
 
@@ -18,6 +20,7 @@ interface FormErrors {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   
   const [form, setForm] = useState<LoginForm>({
     email: '',
@@ -58,22 +61,44 @@ export default function LoginPage() {
       setIsSubmitting(true);
       setErrors({});
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const loginData: LoginRequest = {
+        email: form.email.trim().toLowerCase(),
+        password: form.password
+      };
+
+      await login(loginData);
       
-      // Mock successful login
-      if (form.email === 'admin@fu.edu.vn' && form.password === 'admin123') {
-        // Redirect to admin dashboard
+      // Get user info after login to determine redirect
+      const currentUser = authService.getCurrentUser();
+      
+      // Redirect based on role
+      if (currentUser?.accountRole === AccountRole.Admin) {
         router.push('/admin');
-      } else if (form.email === 'staff@fu.edu.vn' && form.password === 'staff123') {
-        // Redirect to staff dashboard  
-        router.push('/staff');
       } else {
-        setErrors({ general: 'Invalid email or password' });
+        router.push('/'); // Redirect non-admin users to home
       }
       
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      let errorMessage = 'Login failed';
+      
+      if (error instanceof ApiError) {
+        switch (error.status) {
+          case 401:
+            errorMessage = 'Invalid email or password';
+            break;
+          case 403:
+            errorMessage = 'Account is inactive or access denied';
+            break;
+          case 429:
+            errorMessage = 'Too many login attempts. Please try again later.';
+            break;
+          default:
+            errorMessage = error.message || 'Login failed';
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       setErrors({ general: errorMessage });
     } finally {
       setIsSubmitting(false);
@@ -114,8 +139,8 @@ export default function LoginPage() {
             </p>
             <div className="mt-8 space-y-2 text-blue-100">
               <p className="text-sm">Demo Credentials:</p>
-              <p className="text-xs">Admin: admin@fu.edu.vn / admin123</p>
-              <p className="text-xs">Staff: staff@fu.edu.vn / staff123</p>
+              <p className="text-xs">Admin: admin@FUNewsManagementSystem.org / admin123</p>
+              <p className="text-xs">Staff: staff@FUNewsManagementSystem.org / staff123</p>
             </div>
           </div>
         </div>
