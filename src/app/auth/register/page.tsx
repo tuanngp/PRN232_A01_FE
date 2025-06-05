@@ -34,7 +34,7 @@ export default function RegisterPage() {
     accountEmail: '',
     accountPassword: '',
     confirmPassword: '',
-    accountRole: AccountRole.Staff,
+    accountRole: AccountRole.Lecturer,
     agreeToTerms: false
   });
   

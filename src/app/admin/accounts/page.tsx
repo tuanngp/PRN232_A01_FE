@@ -1,10 +1,12 @@
 'use client';
 
+import { AccountForm, StatisticsReport } from '@/components/admin';
 import { AccountsTable } from '@/components/admin/AccountsTable';
 import { AdminRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { ConfirmDialog, Modal } from '@/components/ui';
 import { accountService } from '@/lib/api-services';
-import { AccountRole, SystemAccount } from '@/types/api';
+import { AccountRole, CreateSystemAccountDto, SystemAccount, UpdateSystemAccountDto } from '@/types/api';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -16,6 +18,15 @@ export default function AdminAccountsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filterRole, setFilterRole] = useState<AccountRole | ''>('');
   const [filterStatus, setFilterStatus] = useState<boolean | ''>('');
+
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showStatisticsModal, setShowStatisticsModal] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<SystemAccount | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
@@ -91,8 +102,19 @@ export default function AdminAccountsPage() {
     fetchAccounts();
   };
 
+  const handleCreateNew = () => {
+    setSelectedAccount(null);
+    setShowCreateModal(true);
+  };
+
   const handleEdit = (account: SystemAccount) => {
-    router.push(`/admin/accounts/edit/${account.accountId}`);
+    setSelectedAccount(account);
+    setShowEditModal(true);
+  };
+
+  const handleDelete = (account: SystemAccount) => {
+    setSelectedAccount(account);
+    setShowDeleteConfirm(true);
   };
 
   const handleToggleStatus = async (accountId: number) => {
@@ -121,8 +143,52 @@ export default function AdminAccountsPage() {
     }
   };
 
-  const handleCreateNew = () => {
-    router.push('/admin/accounts/create');
+  const handleCreateSubmit = async (data: CreateSystemAccountDto) => {
+    try {
+      setFormLoading(true);
+      await accountService.createAccount(data);
+      setShowCreateModal(false);
+      await fetchAccounts();
+    } catch (error) {
+      console.error('Create account failed:', error);
+      throw error;
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleEditSubmit = async (data: UpdateSystemAccountDto) => {
+    if (!selectedAccount) return;
+    
+    try {
+      setFormLoading(true);
+      await accountService.updateAccount(selectedAccount.accountId, data);
+      setShowEditModal(false);
+      setSelectedAccount(null);
+      await fetchAccounts();
+    } catch (error) {
+      console.error('Update account failed:', error);
+      throw error;
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedAccount) return;
+
+    try {
+      setDeleteLoading(true);
+      await accountService.deleteAccount(selectedAccount.accountId);
+      setShowDeleteConfirm(false);
+      setSelectedAccount(null);
+      await fetchAccounts();
+    } catch (error) {
+      console.error('Delete account failed:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const getRoleName = (role: AccountRole): string => {
@@ -138,18 +204,35 @@ export default function AdminAccountsPage() {
     }
   };
 
+  const closeModals = () => {
+    setShowCreateModal(false);
+    setShowEditModal(false);
+    setShowDeleteConfirm(false);
+    setShowStatisticsModal(false);
+    setSelectedAccount(null);
+  };
+
   return (
     <AdminRoute>
       <AdminLayout>
         <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
-          <p className="text-black text-4xl font-bold leading-tight">Accounts</p>
-          <button 
-            onClick={handleCreateNew}
-            className="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer rounded-full h-10 px-6 bg-black text-white text-base font-medium leading-normal shadow-md hover:bg-gray-800 transition-colors"
-          >
-            <span className="material-icons">add_circle</span>
-            <span className="truncate">New Account</span>
-          </button>
+          <p className="text-black text-4xl font-bold leading-tight">Account Management</p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowStatisticsModal(true)}
+              className="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer rounded-full h-10 px-6 bg-green-600 text-white text-base font-medium leading-normal shadow-md hover:bg-green-700 transition-colors"
+            >
+              <span className="material-icons">analytics</span>
+              <span className="truncate">Statistics</span>
+            </button>
+            <button 
+              onClick={handleCreateNew}
+              className="flex items-center justify-center gap-2 min-w-[84px] cursor-pointer rounded-full h-10 px-6 bg-black text-white text-base font-medium leading-normal shadow-md hover:bg-gray-800 transition-colors"
+            >
+              <span className="material-icons">add_circle</span>
+              <span className="truncate">New Account</span>
+            </button>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -233,11 +316,72 @@ export default function AdminAccountsPage() {
         <AccountsTable
           accounts={accounts}
           onEdit={handleEdit}
+          onDelete={handleDelete}
           onToggleStatus={handleToggleStatus}
           onResetPassword={handleResetPassword}
           isLoading={loading}
           getRoleName={getRoleName}
         />
+
+        {/* Create Account Modal */}
+        <Modal
+          isOpen={showCreateModal}
+          onClose={closeModals}
+          title="Create New Account"
+          size="lg"
+        >
+          <AccountForm
+            onSubmit={handleCreateSubmit}
+            onCancel={closeModals}
+            isLoading={formLoading}
+          />
+        </Modal>
+
+        {/* Edit Account Modal */}
+        <Modal
+          isOpen={showEditModal}
+          onClose={closeModals}
+          title="Edit Account"
+          size="lg"
+        >
+          <AccountForm
+            account={selectedAccount || undefined}
+            onSubmit={handleEditSubmit}
+            onCancel={closeModals}
+            isLoading={formLoading}
+          />
+        </Modal>
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={showDeleteConfirm}
+          onClose={closeModals}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Account"
+          message={
+            <div>
+              <p className="mb-2">
+                Are you sure you want to delete the account <strong>{selectedAccount?.accountName}</strong>?
+              </p>
+              <p className="text-sm text-gray-600">
+                This action cannot be undone. The account will be permanently deleted if it has not created any news articles.
+              </p>
+            </div>
+          }
+          confirmText="Delete Account"
+          type="danger"
+          isLoading={deleteLoading}
+        />
+
+        {/* Statistics Modal */}
+        <Modal
+          isOpen={showStatisticsModal}
+          onClose={closeModals}
+          title="Statistics Report"
+          size="xl"
+        >
+          <StatisticsReport onClose={closeModals} />
+        </Modal>
       </AdminLayout>
     </AdminRoute>
   );

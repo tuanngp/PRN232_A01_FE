@@ -1,6 +1,6 @@
 'use client';
 
-import { AdminRoute } from '@/components/auth/ProtectedRoute';
+import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { categoryService, newsArticleTagService, newsService, tagService } from '@/lib/api-services';
 import { Category, CreateNewsArticleDto, NewsArticleRequest, NewsStatus, Tag } from '@/types/api';
@@ -98,7 +98,7 @@ export default function CreateNewsPage() {
   };
 
   return (
-    <AdminRoute>
+    <StaffRoute>
       <AdminLayout>
         <div className="max-w-4xl">
           <div className="flex items-center gap-4 mb-8">
@@ -275,6 +275,6 @@ export default function CreateNewsPage() {
           </form>
         </div>
       </AdminLayout>
-    </AdminRoute>
+    </StaffRoute>
   );
 } 

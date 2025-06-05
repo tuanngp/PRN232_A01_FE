@@ -1,6 +1,6 @@
 'use client';
 
-import { AdminRoute } from '@/components/auth/ProtectedRoute';
+import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { ArticlesTable } from '@/components/news/ArticlesTable';
 import { mockArticles } from '@/components/news/MockArticlesData';
@@ -49,7 +49,7 @@ export default function AdminNewsDemo() {
   };
 
   return (
-    <AdminRoute>
+    <StaffRoute>
       <AdminLayout>
         <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
           <p className="text-black text-4xl font-bold leading-tight">Articles</p>
@@ -111,6 +111,6 @@ export default function AdminNewsDemo() {
           isLoading={loading}
         />
       </AdminLayout>
-    </AdminRoute>
+    </StaffRoute>
   );
 } 

@@ -280,6 +280,26 @@ export const categoryService = {
   // Get active categories for public use
   async getActiveCategories(): Promise<Category[]> {
     return this.getCategoriesOData(COMMON_QUERIES.ACTIVE_CATEGORIES);
+  },
+
+  // Check if category can be deleted (doesn't have news articles)
+  async canDeleteCategory(id: number): Promise<boolean> {
+    try {
+      const newsArticles = await newsService.getNewsOData(`$filter=CategoryId eq ${id}`);
+      return newsArticles.length === 0;
+    } catch (error) {
+      console.error('Error checking if category can be deleted:', error);
+      return false;
+    }
+  },
+
+  // Delete category with constraint check
+  async deleteCategoryWithCheck(id: number): Promise<void> {
+    const canDelete = await this.canDeleteCategory(id);
+    if (!canDelete) {
+      throw new Error('Cannot delete category: Category has news articles');
+    }
+    await this.deleteCategory(id);
   }
 };
 
@@ -527,6 +547,117 @@ export const accountService = {
   // Get accounts by role
   async getAccountsByRole(role: AccountRole): Promise<SystemAccount[]> {
     return this.getAccountsOData(COMMON_QUERIES.ACCOUNTS_BY_ROLE(role));
+  },
+
+  // Check if account can be deleted (doesn't have news articles)
+  async canDeleteAccount(id: number): Promise<boolean> {
+    try {
+      const newsArticles = await newsService.getNewsOData(`$filter=CreatedBy/AccountId eq ${id}`);
+      return newsArticles.length === 0;
+    } catch (error) {
+      console.error('Error checking if account can be deleted:', error);
+      return false;
+    }
+  },
+
+  // Delete account (if no news articles)
+  async deleteAccount(id: number): Promise<void> {
+    const canDelete = await this.canDeleteAccount(id);
+    if (!canDelete) {
+      throw new Error('Cannot delete account: Account has created news articles');
+    }
+    // Since there's no delete endpoint in swagger, we'll deactivate instead
+    await this.toggleAccountStatus(id);
+  },
+
+  // Get news articles created by account
+  async getNewsCreatedByAccount(accountId: number): Promise<NewsArticle[]> {
+    return newsService.getNewsOData(`$filter=CreatedBy/AccountId eq ${accountId}&$orderby=CreatedDate desc`);
+  },
+
+  // Get statistics report by date range
+  async getStatisticsReport(startDate: string, endDate: string): Promise<{
+    totalArticles: number;
+    articlesByDate: { date: string; count: number }[];
+    articlesByCategory: { categoryName: string; count: number }[];
+    articlesByAuthor: { authorName: string; count: number }[];
+    articlesByStatus: { status: string; count: number }[];
+  }> {
+    try {
+      // Get articles in date range
+      const articles = await newsService.getNewsOData(
+        `$filter=CreatedDate ge ${startDate}T00:00:00Z and CreatedDate le ${endDate}T23:59:59Z&$expand=Category,CreatedBy&$orderby=CreatedDate desc`
+      );
+
+      // Process statistics
+      const articlesByDate = this.groupArticlesByDate(articles);
+      const articlesByCategory = this.groupArticlesByCategory(articles);
+      const articlesByAuthor = this.groupArticlesByAuthor(articles);
+      const articlesByStatus = this.groupArticlesByStatus(articles);
+
+      return {
+        totalArticles: articles.length,
+        articlesByDate,
+        articlesByCategory,
+        articlesByAuthor,
+        articlesByStatus
+      };
+    } catch (error) {
+      console.error('Error getting statistics report:', error);
+      throw error;
+    }
+  },
+
+  // Helper method to group articles by date
+  groupArticlesByDate(articles: NewsArticle[]): { date: string; count: number }[] {
+    const grouped = articles.reduce((acc, article) => {
+      const date = new Date(article.createdDate).toISOString().split('T')[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(grouped)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  },
+
+  // Helper method to group articles by category
+  groupArticlesByCategory(articles: NewsArticle[]): { categoryName: string; count: number }[] {
+    const grouped = articles.reduce((acc, article) => {
+      const categoryName = article.category?.categoryName || 'Uncategorized';
+      acc[categoryName] = (acc[categoryName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(grouped)
+      .map(([categoryName, count]) => ({ categoryName, count }))
+      .sort((a, b) => b.count - a.count);
+  },
+
+  // Helper method to group articles by author
+  groupArticlesByAuthor(articles: NewsArticle[]): { authorName: string; count: number }[] {
+    const grouped = articles.reduce((acc, article) => {
+      const authorName = article.createdBy?.accountName || 'Unknown';
+      acc[authorName] = (acc[authorName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(grouped)
+      .map(([authorName, count]) => ({ authorName, count }))
+      .sort((a, b) => b.count - a.count);
+  },
+
+  // Helper method to group articles by status
+  groupArticlesByStatus(articles: NewsArticle[]): { status: string; count: number }[] {
+    const grouped = articles.reduce((acc, article) => {
+      const status = article.newsStatus === 1 ? 'Active' : 'Inactive';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(grouped)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count);
   }
 };
 

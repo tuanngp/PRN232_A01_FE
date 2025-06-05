@@ -1,3 +1,5 @@
+'use client';
+
 import { ReactNode, useEffect } from 'react';
 
 interface ModalProps {
@@ -6,23 +8,33 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  showCloseButton?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  size = 'md',
+  showCloseButton = true 
+}: ModalProps) {
+  // Handle ESC key to close modal
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
         onClose();
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener('keydown', handleEsc);
+      // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
@@ -33,44 +45,45 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
-    xl: 'max-w-4xl'
+    xl: 'max-w-4xl',
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Backdrop */}
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      />
+      
+      {/* Modal Container */}
+      <div className="flex min-h-full items-center justify-center p-4">
         <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          onClick={onClose}
-        />
-
-        {/* Modal */}
-        <div 
-          className={`inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:align-middle ${sizeClasses[size]}`}
+          className={`relative bg-white rounded-xl shadow-xl transition-all transform ${sizeClasses[size]} w-full`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium leading-6 text-gray-900">
-                {title}
-              </h3>
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+            {showCloseButton && (
               <button
                 onClick={onClose}
-                className="rounded-md bg-white text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Close modal"
               >
-                <span className="sr-only">Close</span>
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <span className="material-icons text-xl">close</span>
               </button>
-            </div>
-            <div className="modal-body">
-              {children}
-            </div>
+            )}
+          </div>
+          
+          {/* Content */}
+          <div className="p-6">
+            {children}
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
+
+export default Modal; 

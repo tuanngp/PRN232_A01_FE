@@ -1,9 +1,15 @@
 'use client';
 
-import { AdminRoute } from '@/components/auth/ProtectedRoute';
+import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Toast, ToastContainer } from '@/components/ui/Toast';
 import { categoryService } from '@/lib/api-services';
-import { Category, UpdateCategoryDto } from '@/types/api';
+import { Category, NewsStatus, UpdateCategoryDto } from '@/types/api';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -17,6 +23,7 @@ export default function EditCategoryPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<any[]>([]);
 
   const [formData, setFormData] = useState<UpdateCategoryDto>({
     categoryName: '',
@@ -28,6 +35,20 @@ export default function EditCategoryPage() {
   useEffect(() => {
     fetchData();
   }, [categoryId]);
+
+  const showToast = (variant: 'success' | 'error' | 'warning' | 'info', title: string, description: string) => {
+    const newToast = {
+      id: Date.now().toString(),
+      title,
+      description,
+      variant,
+    };
+    setToasts(prev => [...prev, newToast]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
   const fetchData = async () => {
     try {
@@ -53,6 +74,7 @@ export default function EditCategoryPage() {
     } catch (error) {
       console.error('Failed to fetch data:', error);
       setError('Failed to load category data. Please try again.');
+      showToast('error', 'Error', 'Failed to load category data');
     } finally {
       setLoading(false);
     }
@@ -91,10 +113,15 @@ export default function EditCategoryPage() {
       // Update the category
       await categoryService.updateCategory(categoryId, formData);
 
-      router.push('/admin/categories');
+      showToast('success', 'Success!', 'Category updated successfully');
+      
+      setTimeout(() => {
+        router.push('/admin/categories');
+      }, 1000);
     } catch (error) {
       console.error('Failed to update category:', error);
       setError('Failed to update category. Please try again.');
+      showToast('error', 'Error', 'Failed to update category');
     } finally {
       setSaving(false);
     }
@@ -106,171 +133,273 @@ export default function EditCategoryPage() {
 
   if (loading) {
     return (
-      <AdminRoute>
+      <StaffRoute>
         <AdminLayout>
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-            <div className="space-y-6">
-              <div className="h-12 bg-gray-200 rounded"></div>
-              <div className="h-24 bg-gray-200 rounded"></div>
-              <div className="h-12 bg-gray-200 rounded"></div>
+          <div className="max-w-4xl mx-auto animate-fade-in">
+            <div className="flex items-center gap-4 mb-8">
+              <Skeleton variant="button" width="100px" />
+              <div>
+                <Skeleton variant="title" width="250px" />
+                <Skeleton variant="text" width="180px" />
+              </div>
+            </div>
+            
+            <div className="space-y-8">
+              <SkeletonCard />
+              <SkeletonCard />
             </div>
           </div>
         </AdminLayout>
-      </AdminRoute>
+      </StaffRoute>
     );
   }
 
   if (!category) {
     return (
-      <AdminRoute>
+      <StaffRoute>
         <AdminLayout>
-          <div className="text-center py-12">
-            <span className="material-icons text-6xl text-gray-300 mb-4">category</span>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Category Not Found</h2>
-            <p className="text-gray-600 mb-6">The category you're looking for doesn't exist.</p>
-            <button
-              onClick={handleCancel}
-              className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              Back to Categories
-            </button>
+          <div className="max-w-4xl mx-auto">
+            <Card variant="elevated" className="text-center py-16 animate-scale-in">
+              <CardContent>
+                <span className="material-icons text-6xl text-gray-300 mb-4 block">category</span>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Category Not Found</h2>
+                <p className="text-gray-600 mb-6">The category you're looking for doesn't exist or has been removed.</p>
+                <Button
+                  variant="primary"
+                  onClick={handleCancel}
+                  icon={<span className="material-icons">arrow_back</span>}
+                >
+                  Back to Categories
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </AdminLayout>
-      </AdminRoute>
+      </StaffRoute>
     );
   }
 
   return (
-    <AdminRoute>
+    <StaffRoute>
       <AdminLayout>
-        <div className="max-w-2xl">
+        <div className="max-w-4xl mx-auto animate-fade-in">
+          {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <button
+            <Button
+              variant="ghost"
+              size="md"
               onClick={handleCancel}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Back"
+              icon={<span className="material-icons">arrow_back</span>}
+              className="p-3"
             >
-              <span className="material-icons">arrow_back</span>
-            </button>
-            <h1 className="text-black text-4xl font-bold leading-tight">Edit Category</h1>
+              Back
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+                Edit Category
+              </h1>
+              <p className="text-gray-600 mt-2">Update category information and settings</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <StatusBadge 
+                status={category.isActive ? NewsStatus.Active : NewsStatus.Inactive} 
+                variant="modern" 
+              />
+              <span className="text-sm text-gray-500">
+                ID: {category.categoryId}
+              </span>
+            </div>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center">
-                <span className="material-icons text-red-500 mr-2">error</span>
-                <p className="text-red-700">{error}</p>
-              </div>
-            </div>
+            <Card variant="elevated" className="mb-6 border-red-200 bg-red-50 animate-slide-down">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <span className="material-icons text-red-500">error</span>
+                  <p className="text-red-700 font-medium">{error}</p>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Category Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.categoryName}
-                onChange={(e) => setFormData(prev => ({ ...prev, categoryName: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-50"
-                placeholder="Enter category name..."
-                maxLength={100}
-              />
-            </div>
-
-            {/* Category Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                rows={4}
-                value={formData.categoryDescription}
-                onChange={(e) => setFormData(prev => ({ ...prev, categoryDescription: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-50 resize-none"
-                placeholder="Enter category description..."
-                maxLength={500}
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                {formData.categoryDescription?.length || 0}/500 characters
-              </p>
-            </div>
-
-            {/* Parent Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Parent Category
-              </label>
-              <select
-                value={formData.parentCategoryId || ''}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  parentCategoryId: e.target.value ? Number(e.target.value) : undefined 
-                }))}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:ring-opacity-50"
-              >
-                <option value="">No parent (Root category)</option>
-                {categories.map(cat => (
-                  <option key={cat.categoryId} value={cat.categoryId}>
-                    {cat.categoryName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Active Status */}
-            <div>
-              <label className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                  className="rounded border-gray-300 text-black focus:ring-black"
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Basic Information */}
+            <Card variant="elevated" hover className="animate-slide-up">
+              <CardHeader gradient>
+                <CardTitle size="lg" gradient>📁 Basic Information</CardTitle>
+                <CardDescription>Update the main details of your category</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Input
+                  label="Category Name"
+                  variant="floating"
+                  size="lg"
+                  required
+                  value={formData.categoryName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, categoryName: e.target.value }))}
+                  placeholder="Enter category name..."
+                  icon={<span className="material-icons">label</span>}
+                  helperText={`${formData.categoryName?.length || 0}/100 characters`}
                 />
-                <span className="text-sm font-medium text-gray-700">
-                  Active Category
-                </span>
-              </label>
-              <p className="text-sm text-gray-500 mt-1">
-                Inactive categories won't be available for new articles
-              </p>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Description
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={formData.categoryDescription}
+                    onChange={(e) => setFormData(prev => ({ ...prev, categoryDescription: e.target.value }))}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 resize-none bg-white hover:border-gray-400"
+                    placeholder="Enter category description..."
+                    maxLength={500}
+                  />
+                  <div className="flex justify-between items-center mt-2 text-sm text-gray-500">
+                    <span>Optional: Provide a brief description of this category</span>
+                    <span>{formData.categoryDescription?.length || 0}/500 characters</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Settings */}
+            <div className="animate-slide-up" style={{animationDelay: '0.1s'}}>
+              <Card variant="gradient" hover>
+                <CardHeader>
+                  <CardTitle size="lg">⚙️ Category Settings</CardTitle>
+                  <CardDescription>Configure category hierarchy and status</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Parent Category
+                      </label>
+                      <select
+                        value={formData.parentCategoryId || ''}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          parentCategoryId: e.target.value ? Number(e.target.value) : undefined 
+                        }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white hover:border-gray-400"
+                      >
+                        <option value="">No parent (Top-level category)</option>
+                        {categories
+                          .filter(cat => cat.isActive)
+                          .map(cat => (
+                            <option key={cat.categoryId} value={cat.categoryId}>
+                              {cat.categoryName}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Status
+                      </label>
+                      <select
+                        value={formData.isActive ? 'active' : 'inactive'}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          isActive: e.target.value === 'active' 
+                        }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white hover:border-gray-400"
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                      </select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Category Stats */}
+            {(category as any).newsArticles && (
+              <div className="animate-slide-up" style={{animationDelay: '0.2s'}}>
+                <Card variant="minimal" hover>
+                  <CardHeader>
+                    <CardTitle size="lg">📊 Category Statistics</CardTitle>
+                    <CardDescription>Current usage and metrics</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-200">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {(category as any).newsArticles?.length || 0}
+                        </div>
+                        <div className="text-sm text-blue-700 font-medium">Articles</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-green-50 rounded-xl border border-green-200">
+                        <div className="text-2xl font-bold text-green-600">
+                          {(category as any).subCategories?.length || 0}
+                        </div>
+                        <div className="text-sm text-green-700 font-medium">Subcategories</div>
+                      </div>
+                      
+                      <div className="text-center p-4 bg-purple-50 rounded-xl border border-purple-200">
+                        <div className="text-2xl font-bold text-purple-600">
+                          {new Date(category.createdDate || '').toLocaleDateString()}
+                        </div>
+                        <div className="text-sm text-purple-700 font-medium">Created</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Action Buttons */}
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={saving}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex items-center gap-2 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                {saving ? (
-                  <>
-                    <span className="material-icons animate-spin">sync</span>
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-icons">save</span>
-                    Update Category
-                  </>
-                )}
-              </button>
+            <div className="animate-slide-up" style={{animationDelay: '0.3s'}}>
+              <Card variant="elevated">
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-500">
+                      <p>Last updated: {new Date(category.modifiedDate || category.createdDate || '').toLocaleString()}</p>
+                    </div>
+                    
+                    <div className="flex space-x-4">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={handleCancel}
+                        disabled={saving}
+                        icon={<span className="material-icons">close</span>}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        variant="gradient"
+                        size="lg"
+                        loading={saving}
+                        icon={<span className="material-icons">save</span>}
+                      >
+                        Update Category
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </form>
         </div>
+
+        {/* Toast Container */}
+        <ToastContainer position="top-right">
+          {toasts.map((toast) => (
+            <Toast
+              key={toast.id}
+              title={toast.title}
+              description={toast.description}
+              variant={toast.variant}
+              onClose={() => removeToast(toast.id)}
+            />
+          ))}
+        </ToastContainer>
       </AdminLayout>
-    </AdminRoute>
+    </StaffRoute>
   );
 }

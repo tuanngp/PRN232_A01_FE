@@ -1,6 +1,6 @@
 'use client';
 
-import { AdminRoute } from '@/components/auth/ProtectedRoute';
+import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { tagService } from '@/lib/api-services';
 import { Tag, UpdateTagDto } from '@/types/api';
@@ -96,7 +96,7 @@ export default function EditTagPage() {
 
   if (loading) {
     return (
-      <AdminRoute>
+      <StaffRoute>
         <AdminLayout>
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
@@ -106,13 +106,13 @@ export default function EditTagPage() {
             </div>
           </div>
         </AdminLayout>
-      </AdminRoute>
+      </StaffRoute>
     );
   }
 
   if (!tag) {
     return (
-      <AdminRoute>
+      <StaffRoute>
         <AdminLayout>
           <div className="text-center py-12">
             <span className="material-icons text-6xl text-gray-300 mb-4">label</span>
@@ -126,12 +126,12 @@ export default function EditTagPage() {
             </button>
           </div>
         </AdminLayout>
-      </AdminRoute>
+      </StaffRoute>
     );
   }
 
   return (
-    <AdminRoute>
+    <StaffRoute>
       <AdminLayout>
         <div className="max-w-2xl">
           <div className="flex items-center gap-4 mb-8">
@@ -233,6 +233,6 @@ export default function EditTagPage() {
           </form>
         </div>
       </AdminLayout>
-    </AdminRoute>
+    </StaffRoute>
   );
 }

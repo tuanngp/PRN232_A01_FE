@@ -72,10 +72,10 @@ export default function LoginPage() {
       const currentUser = authService.getCurrentUser();
       
       // Redirect based on role
-      if (currentUser?.accountRole === AccountRole.Admin) {
+      if (currentUser?.accountRole === AccountRole.Admin || currentUser?.accountRole === AccountRole.Staff) {
         router.push('/admin');
       } else {
-        router.push('/'); // Redirect non-admin users to home
+        router.push('/'); // Redirect other users to home
       }
       
     } catch (error) {

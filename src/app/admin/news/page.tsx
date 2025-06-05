@@ -1,6 +1,6 @@
 'use client';
 
-import { AdminRoute } from '@/components/auth/ProtectedRoute';
+import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { ArticlesTable } from '@/components/news/ArticlesTable';
 import { newsService } from '@/lib/api-services';
@@ -87,7 +87,7 @@ export default function AdminNewsPage() {
   };
 
   return (
-    <AdminRoute>
+    <StaffRoute>
       <AdminLayout>
         <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
           <p className="text-black text-4xl font-bold leading-tight">Articles</p>
@@ -146,6 +146,6 @@ export default function AdminNewsPage() {
           isLoading={loading}
         />
       </AdminLayout>
-    </AdminRoute>
+    </StaffRoute>
   );
 } 

@@ -1,7 +1,8 @@
 'use client';
 
+import { CreateTagModal } from '@/components/admin';
 import { TagsTable } from '@/components/admin/TagsTable';
-import { AdminRoute } from '@/components/auth/ProtectedRoute';
+import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { tagService } from '@/lib/api-services';
 import { Tag } from '@/types/api';
@@ -14,6 +15,7 @@ export default function AdminTagsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
     fetchTags();
@@ -69,25 +71,45 @@ export default function AdminTagsPage() {
   };
 
   const handleDelete = async (tagId: number) => {
-    if (!confirm('Are you sure you want to delete this tag? This action cannot be undone.')) {
+    const tag = tags.find(t => t.tagId === tagId);
+    const tagName = tag?.tagName || 'this tag';
+    
+    if (!confirm(`Are you sure you want to delete "${tagName}"? This action cannot be undone.`)) {
       return;
     }
 
     try {
       await tagService.deleteTag(tagId);
-      await fetchTags(); // Refresh the list
+      // Remove tag from local state immediately for better UX
+      setTags(prev => prev.filter(t => t.tagId !== tagId));
+      console.log('✅ Tag deleted successfully:', tagName);
     } catch (error) {
       console.error('Delete failed:', error);
       alert('Failed to delete tag. This tag may be associated with articles.');
+      // Refresh the list in case of error to ensure data consistency
+      fetchTags();
     }
   };
 
   const handleCreateNew = () => {
-    router.push('/admin/tags/create');
+    setShowCreateModal(true);
+  };
+
+  const handleCreateSuccess = (newTag: Tag) => {
+    // Add the new tag to the current list
+    setTags(prev => [newTag, ...prev]);
+    // Clear search term if any
+    setSearchTerm('');
+    // Show success message
+    console.log('✅ Tag created successfully:', newTag.tagName);
+  };
+
+  const handleCloseModal = () => {
+    setShowCreateModal(false);
   };
 
   return (
-    <AdminRoute>
+    <StaffRoute>
       <AdminLayout>
         <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
           <p className="text-black text-4xl font-bold leading-tight">Tags</p>
@@ -145,7 +167,14 @@ export default function AdminTagsPage() {
           onDelete={handleDelete}
           isLoading={loading}
         />
+
+        {/* Create Tag Modal */}
+        <CreateTagModal
+          isOpen={showCreateModal}
+          onClose={handleCloseModal}
+          onSuccess={handleCreateSuccess}
+        />
       </AdminLayout>
-    </AdminRoute>
+    </StaffRoute>
   );
 } 

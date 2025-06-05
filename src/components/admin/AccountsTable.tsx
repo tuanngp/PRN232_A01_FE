@@ -5,6 +5,7 @@ import { AccountRole, SystemAccount } from '@/types/api';
 interface AccountsTableProps {
   accounts: SystemAccount[];
   onEdit: (account: SystemAccount) => void;
+  onDelete?: (account: SystemAccount) => void;
   onToggleStatus: (accountId: number) => void;
   onResetPassword: (accountId: number) => void;
   isLoading?: boolean;
@@ -14,6 +15,7 @@ interface AccountsTableProps {
 export function AccountsTable({ 
   accounts, 
   onEdit, 
+  onDelete,
   onToggleStatus,
   onResetPassword,
   isLoading = false,
@@ -139,6 +141,15 @@ export function AccountsTable({
                     >
                       <span className="material-icons">lock_reset</span>
                     </button>
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(account)}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        title="Delete Account"
+                      >
+                        <span className="material-icons">delete</span>
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
