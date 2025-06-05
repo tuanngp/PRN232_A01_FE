@@ -27,6 +27,10 @@ export interface RevokeTokenRequest {
   refreshToken: string;
 }
 
+export interface GoogleLoginRequest {
+  idToken: string;
+}
+
 export interface CreateCategoryDto {
   categoryName: string;
   categoryDescription?: string;

@@ -193,6 +193,54 @@ export const authService = {
     }
     
     return null;
+  },
+
+  // Google Login
+  async googleLogin(googleLoginData: { idToken: string }): Promise<LoginResponse> {
+    const response = await apiClient.post<ApiSingleResponse<any>>(
+      API_ENDPOINTS.AUTH.GOOGLE_LOGIN,
+      googleLoginData
+    );
+    
+    // Store tokens in localStorage (same as regular login)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+      
+      // Convert role string to number
+      let roleNumber: number;
+      if (response.data.user.accountRole === 'Admin') {
+        roleNumber = 0;
+      } else if (response.data.user.accountRole === 'Staff') {
+        roleNumber = 1;
+      } else if (response.data.user.accountRole === 'Lecturer') {
+        roleNumber = 2;
+      } else {
+        roleNumber = 1; // Default to Staff
+      }
+      
+      localStorage.setItem('accountRole', roleNumber.toString());
+      localStorage.setItem('accountName', response.data.user.accountName);
+      localStorage.setItem('accountId', response.data.user.accountId.toString());
+    }
+    
+    // Convert the response to match our LoginResponse interface
+    const loginResponse: LoginResponse = {
+      accessToken: response.data.accessToken,
+      refreshToken: response.data.refreshToken,
+      user: {
+        accountId: response.data.user.accountId,
+        accountName: response.data.user.accountName,
+        accountEmail: response.data.user.accountEmail,
+        accountRole: response.data.user.accountRole === 'Admin' ? 0 : 
+                    response.data.user.accountRole === 'Staff' ? 1 : 
+                    response.data.user.accountRole === 'Lecturer' ? 2 : 1
+      },
+      accessTokenExpires: response.data.accessTokenExpires,
+      refreshTokenExpires: response.data.refreshTokenExpires
+    };
+    
+    return loginResponse;
   }
 };
 
@@ -201,10 +249,34 @@ export const authService = {
 export const categoryService = {
   // Get all categories
   async getAllCategories(): Promise<Category[]> {
-    const response = await apiClient.get<ApiResponse<Category>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.CATEGORY.BASE
     );
-    return response.data?.$values || [];
+    
+    // Handle different response formats
+    let result: Category[] = [];
+    
+    // The response itself contains the $values array (not wrapped in response.data)
+    if (response) {
+      // Check if the response directly has $values (which seems to be the case)
+      if (response.$values && Array.isArray(response.$values)) {
+        result = response.$values;
+      }
+      // Check if response is directly an array
+      else if (Array.isArray(response)) {
+        result = response;
+      }
+      // Check if it's wrapped in a data property with $values
+      else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+        result = response.data.$values;
+      }
+      // Check if it's wrapped in a data property that is an array
+      else if (response.data && Array.isArray(response.data)) {
+        result = response.data;
+      }
+    }
+    
+    return result;
   },
 
   // Get category by ID
@@ -240,18 +312,42 @@ export const categoryService = {
 
   // Get subcategories by parent ID
   async getSubcategories(parentId: number): Promise<Category[]> {
-    const response = await apiClient.get<ApiResponse<Category>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.CATEGORY.SUBCATEGORIES(parentId)
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Get root categories
   async getRootCategories(): Promise<Category[]> {
-    const response = await apiClient.get<ApiResponse<Category>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.CATEGORY.ROOT
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Toggle category status
@@ -264,17 +360,41 @@ export const categoryService = {
 
   // Get category tree
   async getCategoryTree(): Promise<Category[]> {
-    const response = await apiClient.get<ApiResponse<Category>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.CATEGORY.TREE
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // OData: Get categories with OData queries
   async getCategoriesOData(query?: string): Promise<Category[]> {
     const endpoint = query ? `${API_ENDPOINTS.CATEGORY.BASE}?${query}` : API_ENDPOINTS.CATEGORY.BASE;
-    const response = await apiClient.get<ApiResponse<Category>>(endpoint);
-    return response.data?.$values || [];
+    const response = await apiClient.get<any>(endpoint);
+    
+    // Handle the same response format as getAllCategories
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Get active categories for public use
@@ -308,10 +428,22 @@ export const categoryService = {
 export const newsService = {
   // Get all news articles
   async getAllNews(): Promise<NewsArticle[]> {
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.NEWS_ARTICLE.BASE
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Get news article by ID
@@ -357,8 +489,20 @@ export const newsService = {
   // OData: Get news with OData queries
   async getNewsOData(query?: string): Promise<NewsArticle[]> {
     const endpoint = query ? `${API_ENDPOINTS.NEWS_ARTICLE.BASE}?${query}` : API_ENDPOINTS.NEWS_ARTICLE.BASE;
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(endpoint);
-    return response.data?.$values || [];
+    const response = await apiClient.get<any>(endpoint);
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Get latest news for homepage
@@ -391,10 +535,22 @@ export const newsService = {
 export const newsArticleTagService = {
   // Get tags for an article
   async getArticleTags(articleId: number): Promise<Tag[]> {
-    const response = await apiClient.get<ApiResponse<Tag>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.NEWS_ARTICLE_TAG.ARTICLE_TAGS(articleId)
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Add tag to article
@@ -415,10 +571,22 @@ export const newsArticleTagService = {
 
   // Get articles by tag
   async getArticlesByTag(tagId: number): Promise<NewsArticle[]> {
-    const response = await apiClient.get<ApiResponse<NewsArticle>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.NEWS_ARTICLE_TAG.TAG_ARTICLES(tagId)
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Add multiple tags to article
@@ -438,11 +606,23 @@ export const newsArticleTagService = {
 
   // Get popular tags statistics
   async getPopularTags(limit = 10): Promise<TagStatistics[]> {
-    const response = await apiClient.get<ApiResponse<TagStatistics>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.NEWS_ARTICLE_TAG.POPULAR_TAGS,
       { limit }
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   }
 };
 
@@ -666,10 +846,22 @@ export const accountService = {
 export const tagService = {
   // Get all tags
   async getAllTags(): Promise<Tag[]> {
-    const response = await apiClient.get<ApiResponse<Tag>>(
+    const response = await apiClient.get<any>(
       API_ENDPOINTS.TAG.BASE
     );
-    return response.data?.$values || [];
+    
+    // Handle the same response format as categories
+    if (response && response.$values && Array.isArray(response.$values)) {
+      return response.$values;
+    } else if (Array.isArray(response)) {
+      return response;
+    } else if (response.data && response.data.$values && Array.isArray(response.data.$values)) {
+      return response.data.$values;
+    } else if (response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    return [];
   },
 
   // Get tag by ID

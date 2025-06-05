@@ -54,10 +54,12 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
     try {
       setLoadingCategories(true);
       const allCategories = await categoryService.getAllCategories();
+      
       // Exclude current category from parent options to prevent circular reference
       const availableCategories = category 
         ? allCategories.filter(cat => cat.categoryId !== category.categoryId)
         : allCategories;
+      
       setCategories(availableCategories);
     } catch (error) {
       console.error('Failed to load categories:', error);

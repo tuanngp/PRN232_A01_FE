@@ -84,6 +84,7 @@ export default function RootLayout({
     <html lang="vi" className="scroll-smooth">
       <head>
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
       </head>
       <body className={`${inter.variable} ${newsreader.variable} ${notoSans.variable} antialiased`}>
         <AuthProvider>

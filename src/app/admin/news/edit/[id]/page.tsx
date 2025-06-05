@@ -1,5 +1,6 @@
 'use client';
 
+import { CreateTagModal } from '@/components/admin/CreateTagModal';
 import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { categoryService, newsArticleTagService, newsService, tagService } from '@/lib/api-services';
@@ -18,6 +19,11 @@ export default function EditNewsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // New tag creation states
+  const [showCreateTagModal, setShowCreateTagModal] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [tagSearchTerm, setTagSearchTerm] = useState('');
 
   const [formData, setFormData] = useState<UpdateNewsArticleDto>({
     newsTitle: '',
@@ -59,8 +65,11 @@ export default function EditNewsPage() {
       });
 
       // Set selected tags
-      if (articleData.tags) {
-        setSelectedTags(articleData.tags.map(tag => tag.tagId));
+      try {
+        const articleTags = await newsArticleTagService.getArticleTags(newsId);
+        setSelectedTags(articleTags.map(tag => tag.tagId));
+      } catch (error) {
+        console.error('Failed to fetch article tags:', error);
       }
     } catch (error) {
       console.error('Failed to fetch data:', error);
@@ -86,11 +95,14 @@ export default function EditNewsPage() {
       await newsService.updateNews(newsId, formData);
 
       // Update tags if they changed
-      if (article?.tags) {
-        const currentTagIds = article.tags.map(tag => tag.tagId);
+      try {
+        const currentTags = await newsArticleTagService.getArticleTags(newsId);
+        const currentTagIds = currentTags.map(tag => tag.tagId);
         if (JSON.stringify(currentTagIds.sort()) !== JSON.stringify(selectedTags.sort())) {
           await newsArticleTagService.replaceArticleTags(newsId, { tagIds: selectedTags });
         }
+      } catch (error) {
+        console.error('Failed to update tags:', error);
       }
 
       router.push('/admin/news');
@@ -112,6 +124,43 @@ export default function EditNewsPage() {
         ? prev.filter(id => id !== tagId)
         : [...prev, tagId]
     );
+  };
+
+  // Handle successful tag creation
+  const handleNewTagSuccess = (newTag: Tag) => {
+    console.log('New tag created:', newTag);
+    // Add to tags list
+    setAllTags(prev => [...prev, newTag]);
+    // Auto-select the new tag
+    setSelectedTags(prev => [...prev, newTag.tagId]);
+    // Clear the search term
+    setTagSearchTerm('');
+    setNewTagName('');
+  };
+
+  // Quick create tag from input
+  const handleQuickCreateTag = async () => {
+    if (!newTagName.trim()) return;
+    
+    try {
+      console.log('Creating quick tag:', newTagName);
+      const newTag = await tagService.createTag({
+        tagName: newTagName.trim(),
+        note: 'Created from news edit form'
+      });
+      handleNewTagSuccess(newTag);
+    } catch (error) {
+      console.error('Failed to create tag:', error);
+      setError('Failed to create tag. Please try again.');
+    }
+  };
+
+  // Handle Enter key in new tag input
+  const handleNewTagKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleQuickCreateTag();
+    }
   };
 
   if (loading) {
@@ -260,9 +309,59 @@ export default function EditNewsPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Tags
               </label>
+              
+              {/* Quick Add Tag Input */}
+              <div className="mb-4 flex gap-2">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    onKeyPress={handleNewTagKeyPress}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Type new tag name and press Enter..."
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleQuickCreateTag}
+                  disabled={!newTagName.trim() || saving}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <span className="material-icons text-sm">add</span>
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateTagModal(true)}
+                  disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <span className="material-icons text-sm">settings</span>
+                  Advanced
+                </button>
+              </div>
+
+              {/* Tag Search */}
+              <div className="mb-3">
+                <input
+                  type="text"
+                  value={tagSearchTerm}
+                  onChange={(e) => setTagSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Search existing tags..."
+                />
+              </div>
+
+              {/* Existing Tags */}
               <div className="border border-gray-200 rounded-lg p-4 max-h-40 overflow-y-auto">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {allTags.map(tag => (
+                  {allTags
+                    .filter(tag => 
+                      tagSearchTerm === '' || 
+                      tag.tagName.toLowerCase().includes(tagSearchTerm.toLowerCase())
+                    )
+                    .map(tag => (
                     <label
                       key={tag.tagId}
                       className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
@@ -277,6 +376,14 @@ export default function EditNewsPage() {
                     </label>
                   ))}
                 </div>
+                {allTags.filter(tag => 
+                  tagSearchTerm === '' || 
+                  tag.tagName.toLowerCase().includes(tagSearchTerm.toLowerCase())
+                ).length === 0 && (
+                  <p className="text-gray-500 text-sm text-center py-4">
+                    {tagSearchTerm ? 'No tags found matching your search.' : 'No tags available.'}
+                  </p>
+                )}
               </div>
               <p className="text-sm text-gray-500 mt-2">
                 Selected: {selectedTags.length} tags
@@ -313,6 +420,13 @@ export default function EditNewsPage() {
             </div>
           </form>
         </div>
+
+        {/* Create Tag Modal */}
+        <CreateTagModal
+          isOpen={showCreateTagModal}
+          onClose={() => setShowCreateTagModal(false)}
+          onSuccess={handleNewTagSuccess}
+        />
       </AdminLayout>
     </StaffRoute>
   );

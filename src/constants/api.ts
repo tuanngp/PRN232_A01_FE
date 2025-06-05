@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
   // Auth Endpoints
   AUTH: {
     LOGIN: '/api/Auth/login',
+    GOOGLE_LOGIN: '/api/auth/google-login',
     REFRESH_TOKEN: '/api/Auth/refresh-token',
     REFRESH_TOKEN_MANUAL: '/api/Auth/refresh-token-manual',
     REVOKE_TOKEN: '/api/Auth/revoke-token',

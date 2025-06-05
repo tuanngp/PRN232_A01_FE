@@ -10,6 +10,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
 }
@@ -93,6 +94,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const googleLogin = async (idToken: string): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const response = await authService.googleLogin({ idToken });
+      
+      // Store additional user data
+      storage.set('accountEmail', response.user.accountEmail);
+      
+      setUser(response.user);
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async (): Promise<void> => {
     try {
       setIsLoading(true);
@@ -127,6 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     isAuthenticated,
     login,
+    googleLogin,
     logout,
     refreshToken,
   };
