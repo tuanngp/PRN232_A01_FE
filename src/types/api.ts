@@ -4,12 +4,12 @@
 export enum AccountRole {
   Admin = 0,
   Staff = 1,
-  Lecturer = 2,
+  Lecturer = 2
 }
 
 export enum NewsStatus {
   Inactive = 0,
-  Active = 1,
+  Active = 1
 }
 
 // ========== REQUEST DTOs ==========
@@ -236,7 +236,7 @@ export interface SearchParams {
   pageNumber?: number;
   pageSize?: number;
   sortBy?: string;
-  sortDirection?: "asc" | "desc";
+  sortDirection?: 'asc' | 'desc';
 }
 
 // ========== STATISTICS ==========
@@ -285,4 +285,4 @@ export interface TagRequest extends CreateTagDto {}
 
 export interface SystemAccountRequest extends CreateSystemAccountDto {
   isActive?: boolean;
-}
+} 

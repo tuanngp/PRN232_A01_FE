@@ -1,6 +1,6 @@
 // API Client cho FU News System
 
-import { API_BASE_URL, HTTP_STATUS, ERROR_MESSAGES } from '@/constants/api';
+import { API_BASE_URL, ERROR_MESSAGES, HTTP_STATUS } from '@/constants/api';
 
 interface ApiClientConfig {
   baseURL?: string;
@@ -92,13 +92,6 @@ class ApiClient {
     }
 
     try {
-      console.log('API Request:', {
-        url: url.toString(),
-        method,
-        params,
-        headers
-      });
-
       const response = await fetch(url.toString(), config);
       
       if (!response.ok) {
@@ -114,7 +107,6 @@ class ApiClient {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const jsonData = await response.json();
-        console.log('API Response:', jsonData);
         return jsonData;
       } else {
         return (await response.text()) as unknown as T;
