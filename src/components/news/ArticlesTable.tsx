@@ -63,7 +63,13 @@ export function ArticlesTable({
               </td>
             </tr>
           ) : (
-            articles.map((article) => (
+            articles.map((article) => {
+              // Debug: Log article structure for articles with tags
+              if (article.newsArticleTags && (Array.isArray(article.newsArticleTags) || (article.newsArticleTags as any)?.$values)) {
+                console.log(`Article ${article.newsArticleId} tags:`, article.newsArticleTags);
+              }
+              
+              return (
               <tr key={article.newsArticleId} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-black text-base font-medium">
                   <div className="max-w-xs truncate" title={article.newsTitle}>
@@ -77,11 +83,33 @@ export function ArticlesTable({
                   {article.category?.categoryName || 'No Category'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {article.tags && article.tags.length > 0 ? (
-                    <TagChips tags={article.tags} maxTags={2} />
-                  ) : (
-                    <span className="text-gray-400 text-sm">No tags</span>
-                  )}
+                                    {(() => {
+                    // Handle case where newsArticleTags is undefined or null
+                    if (!article.newsArticleTags) {
+                      return <span className="text-gray-400 text-sm">No tags</span>;
+                    }
+                    
+                    // Extract tags array from either direct array or $values structure
+                    const tagsArray = Array.isArray(article.newsArticleTags) 
+                      ? article.newsArticleTags 
+                      : (article.newsArticleTags as any)?.$values;
+                    
+                    // Check if we have any tags
+                    if (!tagsArray || !Array.isArray(tagsArray) || tagsArray.length === 0) {
+                      return <span className="text-gray-400 text-sm">No tags</span>;
+                    }
+                    
+                    // Extract tag objects and filter out nulls
+                    const tags = tagsArray
+                      .map((newsArticleTag: any) => newsArticleTag?.tag)
+                      .filter((tag: any): tag is NonNullable<typeof tag> => tag != null);
+                    
+                    return tags.length > 0 ? (
+                      <TagChips tags={tags} maxTags={2} />
+                    ) : (
+                      <span className="text-gray-400 text-sm">No tags</span>
+                    );
+                  })()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center space-x-2">
@@ -102,7 +130,8 @@ export function ArticlesTable({
                   </div>
                 </td>
               </tr>
-            ))
+              );
+            })
           )}
         </tbody>
       </table>

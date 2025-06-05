@@ -47,8 +47,7 @@ export default function AdminNewsPage() {
       setError(null);
       
       // Search in title using OData
-      const query = `$expand=Category,NewsArticleTags($expand=Tag)
-&$filter=contains(tolower(NewsTitle), '${searchTerm.toLowerCase()}')&$orderby=CreatedDate desc`;
+      const query = `$expand=Category,NewsArticleTags($expand=Tag)&$filter=contains(tolower(NewsTitle), '${searchTerm.toLowerCase()}')&$orderby=CreatedDate desc`;
       const data = await newsService.getNewsOData(query);
       setArticles(data);
     } catch (error) {

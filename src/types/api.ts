@@ -130,7 +130,7 @@ export interface NewsArticle {
   createdBy?: SystemAccount;
   modifiedBy?: SystemAccount;
   category?: Category;
-  tags?: Tag[];
+  newsArticleTags?: NewsArticleTag[] | { $id: string; $values: NewsArticleTag[] };
 }
 
 export interface Category {
