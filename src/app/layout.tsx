@@ -1,7 +1,8 @@
+import { AppWrapper } from "@/components/layout/AppWrapper";
+import { AuthProvider } from "@/context/AuthContext";
 import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader, Noto_Sans } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -86,9 +87,9 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${newsreader.variable} ${notoSans.variable} antialiased`}>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
+          <AppWrapper>
             {children}
-          </div>
+          </AppWrapper>
         </AuthProvider>
       </body>
     </html>

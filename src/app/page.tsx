@@ -1,6 +1,6 @@
 'use client';
 
-import Header from '@/components/layout/Header';
+
 import { useFeaturedNews, useLatestNews } from '@/hooks/useNews';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -131,8 +131,7 @@ export default function HomePage() {
 
   return (
     <div className="bg-slate-50 min-h-screen" style={{ fontFamily: 'Newsreader, "Noto Sans", sans-serif' }}>
-      {/* Header */}
-      <Header />
+
 
       {/* Main Content */}
       <main className="px-10 md:px-20 lg:px-40 flex flex-1 justify-center py-8">

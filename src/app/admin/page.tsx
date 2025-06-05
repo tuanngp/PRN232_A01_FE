@@ -1,7 +1,6 @@
 'use client';
 
 import { AdminRoute } from '@/components/auth/ProtectedRoute';
-import Header from '@/components/layout/Header';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ROUTES } from '@/constants/routes';
@@ -78,9 +77,8 @@ export default function AdminDashboard() {
 
   return (
     <AdminRoute>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <Header />
+      <div className="bg-gray-50"
+        style={{ fontFamily: 'Newsreader, "Noto Sans", sans-serif' }}>
         
         {/* Admin Content Header */}
         <div className="bg-white shadow-sm border-b">
