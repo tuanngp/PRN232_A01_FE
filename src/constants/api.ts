@@ -90,7 +90,7 @@ export const ODATA_PARAMS = {
 export const COMMON_QUERIES = {
   // News Article Queries
   LATEST_NEWS: `${ODATA_PARAMS.ORDER_BY}=CreatedDate desc&${ODATA_PARAMS.TOP}=10&$filter=IsDeleted eq false`,
-  NEWS_BY_CATEGORY: (categoryId: number) => `${ODATA_PARAMS.FILTER}=CategoryId eq ${categoryId}&$filter=IsDeleted eq false`,
+  NEWS_BY_CATEGORY: (categoryId: number) => `${ODATA_PARAMS.FILTER}=CategoryId eq ${categoryId}&IsDeleted eq false`,
   NEWS_BY_STATUS: (status: number) => `${ODATA_PARAMS.FILTER}=NewsStatus eq ${status}&$filter=IsDeleted eq false`,
   ACTIVE_NEWS_ONLY: `${ODATA_PARAMS.FILTER}=NewsStatus eq 1&$filter=IsDeleted eq false`,
   SEARCH_NEWS_TITLE: (keyword: string) => `${ODATA_PARAMS.FILTER}=contains(NewsTitle, '${keyword}')&$filter=IsDeleted eq false`,

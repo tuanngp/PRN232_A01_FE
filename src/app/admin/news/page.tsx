@@ -3,7 +3,7 @@
 import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { ArticlesTable } from '@/components/news/ArticlesTable';
-import { newsService } from '@/lib/api-services';
+import { authService, newsService } from '@/lib/api-services';
 import { NewsArticle } from '@/types/api';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -14,7 +14,7 @@ export default function AdminNewsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
-
+  const currentUser = authService.getCurrentUser();
   useEffect(() => {
     fetchArticles();
   }, []);
@@ -25,7 +25,7 @@ export default function AdminNewsPage() {
       setError(null);
       
       // Use OData query to get active articles only (exclude deleted ones)
-      const query = '$filter=IsDeleted eq false&$orderby=CreatedDate desc';
+      const query = `$filter=IsDeleted eq false&CreatedId=${currentUser?.accountId}&$orderby=CreatedDate desc`;
       const data = await newsService.getNewsOData(query);
       setArticles(data);
     } catch (error) {
@@ -47,7 +47,7 @@ export default function AdminNewsPage() {
       setError(null);
       
       // Search in title using OData, exclude deleted articles
-      const query = `$expand=Category,NewsArticleTags($expand=Tag)&$filter=IsDeteted eq false and contains(tolower(NewsTitle), '${searchTerm.toLowerCase()}')&$orderby=CreatedDate desc`;
+      const query = `$expand=Category,NewsArticleTags($expand=Tag)&$filter=contains(tolower(NewsTitle), '${searchTerm.toLowerCase()}')&$orderby=CreatedDate desc`;
       const data = await newsService.getNewsOData(query);
       setArticles(data);
     } catch (error) {

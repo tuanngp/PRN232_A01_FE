@@ -102,7 +102,6 @@ export default function AdminDashboardPage() {
 
       setStats(dashboardStats);
 
-      // Get recent articles (last 5) - only if we have articles data
       if (articles.length > 0) {
         const sortedArticles = articles
           .sort(

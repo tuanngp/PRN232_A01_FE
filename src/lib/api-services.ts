@@ -1117,11 +1117,34 @@ export const trashService = {
         console.error('Error loading inactive accounts:', error);
       }
     }
-
+    // Lấy news bị soft delete (status = Deleted)
+    try {
+      const query = '$filter=IsDeleted eq true&$orderby=CreatedDate desc';
+      const deletedNews = await newsService.getNewsOData(query);
+      items.push(...deletedNews.map(news => ({
+        id: news.newsArticleId,
+        type: 'news' as const,
+        title: news.newsTitle,
+        deletedDate: news.modifiedDate || new Date().toISOString(),
+        deletedBy: news.modifiedBy?.accountName || 'Unknown',
+        originalData: news
+      })));
+    } catch (error) {
+      console.error('Error loading deleted news:', error);
+    }
     // Lấy tags từ localStorage (vì backend sẽ xóa thật)
-    const localTrashItems = this.getLocalTrashItems();
-    items.push(...localTrashItems.filter(item => item.type === 'tag'));
-
+    // const localTrashItems = this.getLocalTrashItems();
+    // items.push(...localTrashItems.filter(item => item.type === 'tag'));
+    const query = '$filter=IsDeleted eq true&$orderby=CreatedDate desc';
+    const data = await tagService.getTagsOData(query);
+    items.push(...data.map(tag => ({
+      id: tag.tagId,
+      type: 'tag' as const,
+      title: tag.tagName,
+      deletedDate: tag.modifiedDate || new Date().toISOString(),
+      deletedBy: 'Unknown',
+      originalData: tag
+    })));
     return items.sort((a, b) => new Date(b.deletedDate).getTime() - new Date(a.deletedDate).getTime());
   },
 
