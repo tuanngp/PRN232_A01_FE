@@ -175,26 +175,29 @@ export default function ArticleDetailPage() {
                 </div>
               )}
               
-              {article.tags && article.tags.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="material-icons text-lg">local_offer</span>
-                  <div className="flex gap-2">
-                    {article.tags.slice(0, 3).map((tag) => (
-                      <span 
-                        key={tag.tagId}
-                        className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs"
-                      >
-                        {tag.tagName}
-                      </span>
-                    ))}
-                    {article.tags.length > 3 && (
-                      <span className="text-slate-400">+{article.tags.length - 3} more</span>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Tags would be displayed here if needed */}
             </div>
           </div>
+
+          {/* Article Image */}
+          {article.imageUrl && (
+            <div className="mb-8">
+              <div className="relative w-full h-64 md:h-96 lg:h-[500px] rounded-xl overflow-hidden">
+                <img
+                  src={article.imageUrl}
+                  alt={article.newsTitle}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Hide image container if image fails to load
+                    const container = e.currentTarget.closest('.mb-8');
+                    if (container) {
+                      (container as HTMLElement).style.display = 'none';
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Article Content */}
           <div className="mb-12">

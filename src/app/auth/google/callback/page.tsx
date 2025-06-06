@@ -19,9 +19,6 @@ export default function GoogleCallbackPage() {
         // Get the ID token from URL fragments (for implicit flow)
         const urlFragment = window.location.hash.substring(1);
         const params = new URLSearchParams(urlFragment);
-        const idToken = params.get('id_token');
-
-        // Or get from query params (for authorization code flow)
         const code = searchParams.get('code');
         const error = searchParams.get('error');
 
@@ -31,11 +28,9 @@ export default function GoogleCallbackPage() {
           return;
         }
 
-        if (idToken) {
-          // Direct ID token flow
-          await googleLogin(idToken);
+        if (code) {
+          await googleLogin(code);
           
-          // Get user info after login to determine redirect
           const currentUser = authService.getCurrentUser();
           
           // Redirect based on role

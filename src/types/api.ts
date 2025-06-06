@@ -9,7 +9,8 @@ export enum AccountRole {
 
 export enum NewsStatus {
   Inactive = 0,
-  Active = 1
+  Active = 1,
+  Deleted = 2
 }
 
 // ========== REQUEST DTOs ==========
@@ -50,6 +51,7 @@ export interface CreateNewsArticleDto {
   newsContent: string;
   newsSource?: string;
   categoryId: number;
+  imageUrl?: string;
 }
 
 export interface UpdateNewsArticleDto {
@@ -58,6 +60,7 @@ export interface UpdateNewsArticleDto {
   newsContent?: string;
   newsSource?: string;
   categoryId?: number;
+  imageUrl?: string;
 }
 
 export interface ChangeNewsStatusDto {
@@ -129,6 +132,7 @@ export interface NewsArticle {
   newsSource?: string;
   categoryId: number;
   newsStatus: NewsStatus;
+  imageUrl?: string;
   createdDate: string;
   modifiedDate?: string;
   createdBy?: SystemAccount;
@@ -289,4 +293,27 @@ export interface TagRequest extends CreateTagDto {}
 
 export interface SystemAccountRequest extends CreateSystemAccountDto {
   isActive?: boolean;
+}
+
+// ========== TRASH MANAGEMENT TYPES ==========
+export interface TrashItem {
+  id: number;
+  type: 'news' | 'category' | 'tag' | 'account';
+  title: string;
+  deletedDate: string;
+  deletedBy?: string;
+  originalData: any;
+}
+
+export interface RestoreItemDto {
+  id: number;
+  type: 'news' | 'category' | 'tag' | 'account';
+}
+
+export interface TrashStatistics {
+  totalItems: number;
+  newsCount: number;
+  categoryCount: number;
+  tagCount: number;
+  accountCount: number;
 } 

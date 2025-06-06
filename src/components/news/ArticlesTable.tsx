@@ -35,13 +35,16 @@ export function ArticlesTable({
       <table className="w-full">
         <thead className="bg-gray-50">
           <tr>
-            <th className="px-6 py-4 text-left text-black w-[35%] text-sm font-semibold uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-black w-[10%] text-sm font-semibold uppercase tracking-wider">
+              Image
+            </th>
+            <th className="px-6 py-4 text-left text-black w-[30%] text-sm font-semibold uppercase tracking-wider">
               Title
             </th>
-            <th className="px-6 py-4 text-left text-black w-[15%] text-sm font-semibold uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-black w-[12%] text-sm font-semibold uppercase tracking-wider">
               Status
             </th>
-            <th className="px-6 py-4 text-left text-black w-[20%] text-sm font-semibold uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-black w-[18%] text-sm font-semibold uppercase tracking-wider">
               Category
             </th>
             <th className="px-6 py-4 text-left text-black w-[20%] text-sm font-semibold uppercase tracking-wider">
@@ -55,7 +58,7 @@ export function ArticlesTable({
         <tbody className="divide-y divide-gray-200">
           {articles.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+              <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                 <div className="flex flex-col items-center">
                   <span className="material-icons text-4xl text-gray-300 mb-2">article</span>
                   <p>No articles found</p>
@@ -71,6 +74,27 @@ export function ArticlesTable({
               
               return (
               <tr key={article.newsArticleId} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="w-16 h-12 bg-gray-100 rounded-lg overflow-hidden">
+                    {article.imageUrl ? (
+                      <img
+                        src={article.imageUrl}
+                        alt={article.newsTitle}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    {/* Fallback placeholder */}
+                    <div className={`w-full h-full bg-gray-200 flex items-center justify-center ${article.imageUrl ? 'hidden' : ''}`}>
+                      <span className="material-icons text-gray-400 text-sm">image</span>
+                    </div>
+                  </div>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-black text-base font-medium">
                   <div className="max-w-xs truncate" title={article.newsTitle}>
                     {article.newsTitle}

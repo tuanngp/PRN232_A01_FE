@@ -3,6 +3,7 @@
 import { CreateTagModal } from '@/components/admin/CreateTagModal';
 import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { categoryService, newsArticleTagService, newsService, tagService } from '@/lib/api-services';
 import { Category, CreateNewsArticleDto, NewsArticleRequest, NewsStatus, Tag } from '@/types/api';
 import { useRouter } from 'next/navigation';
@@ -15,6 +16,7 @@ export default function CreateNewsPage() {
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
   
   // New tag creation states
   const [showCreateTagModal, setShowCreateTagModal] = useState(false);
@@ -74,7 +76,8 @@ export default function CreateNewsPage() {
         headline: formData.headline,
         newsContent: formData.newsContent,
         newsSource: formData.newsSource,
-        categoryId: formData.categoryId
+        categoryId: formData.categoryId,
+        imageUrl: imageUrl || undefined
       };
       
       const newArticle = await newsService.createNews(createData);
@@ -216,6 +219,14 @@ export default function CreateNewsPage() {
                 placeholder="Enter article headline..."
               />
             </div>
+
+            {/* Image Upload */}
+            <ImageUpload
+              onImageUploaded={setImageUrl}
+              currentImageUrl={imageUrl}
+              disabled={loading}
+              label="Article Image"
+            />
 
             {/* Category, Status, and Source Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

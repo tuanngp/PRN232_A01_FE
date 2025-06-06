@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
   CATEGORY: {
     BASE: '/api/Category',
     BY_ID: (id: number) => `/api/Category/${id}`,
+    HARD_DELETE: (id: number) => `/api/Category/${id}/hard`,
     SUBCATEGORIES: (parentId: number) => `/api/Category/${parentId}/subcategories`,
     ROOT: '/api/Category/root',
     TOGGLE_STATUS: (id: number) => `/api/Category/${id}/toggle-status`,
@@ -31,6 +32,7 @@ export const API_ENDPOINTS = {
   NEWS_ARTICLE: {
     BASE: '/api/NewsArticle',
     BY_ID: (id: number) => `/api/NewsArticle/${id}`,
+    HARD_DELETE: (id: number) => `/api/NewsArticle/${id}/hard`,
     STATUS: (id: number) => `/api/NewsArticle/${id}/status`,
   },
 
@@ -58,6 +60,7 @@ export const API_ENDPOINTS = {
   TAG: {
     BASE: '/api/Tag',
     BY_ID: (id: number) => `/api/Tag/${id}`,
+    HARD_DELETE: (id: number) => `/api/Tag/${id}/hard`,
     SEARCH: '/api/Tag/search',
     STATISTICS: '/api/Tag/statistics',
     POPULAR: '/api/Tag/popular',
@@ -86,25 +89,25 @@ export const ODATA_PARAMS = {
 // Common OData Queries
 export const COMMON_QUERIES = {
   // News Article Queries
-  LATEST_NEWS: `${ODATA_PARAMS.ORDER_BY}=CreatedDate desc&${ODATA_PARAMS.TOP}=10`,
-  NEWS_BY_CATEGORY: (categoryId: number) => `${ODATA_PARAMS.FILTER}=CategoryId eq ${categoryId}`,
-  NEWS_BY_STATUS: (status: number) => `${ODATA_PARAMS.FILTER}=NewsStatus eq ${status}`,
-  ACTIVE_NEWS_ONLY: `${ODATA_PARAMS.FILTER}=NewsStatus eq 1`,
-  SEARCH_NEWS_TITLE: (keyword: string) => `${ODATA_PARAMS.FILTER}=contains(NewsTitle, '${keyword}')`,
-  SEARCH_NEWS_CONTENT: (keyword: string) => `${ODATA_PARAMS.FILTER}=contains(NewsContent, '${keyword}')`,
+  LATEST_NEWS: `${ODATA_PARAMS.ORDER_BY}=CreatedDate desc&${ODATA_PARAMS.TOP}=10&$filter=IsDeleted eq false`,
+  NEWS_BY_CATEGORY: (categoryId: number) => `${ODATA_PARAMS.FILTER}=CategoryId eq ${categoryId}&$filter=IsDeleted eq false`,
+  NEWS_BY_STATUS: (status: number) => `${ODATA_PARAMS.FILTER}=NewsStatus eq ${status}&$filter=IsDeleted eq false`,
+  ACTIVE_NEWS_ONLY: `${ODATA_PARAMS.FILTER}=NewsStatus eq 1&$filter=IsDeleted eq false`,
+  SEARCH_NEWS_TITLE: (keyword: string) => `${ODATA_PARAMS.FILTER}=contains(NewsTitle, '${keyword}')&$filter=IsDeleted eq false`,
+  SEARCH_NEWS_CONTENT: (keyword: string) => `${ODATA_PARAMS.FILTER}=contains(NewsContent, '${keyword}')&$filter=IsDeleted eq false`,
   
   // Category Queries
-  ACTIVE_CATEGORIES: `${ODATA_PARAMS.FILTER}=IsActive eq true`,
-  ROOT_CATEGORIES: `${ODATA_PARAMS.FILTER}=ParentCategoryId eq null`,
-  CATEGORIES_BY_PARENT: (parentId: number) => `${ODATA_PARAMS.FILTER}=ParentCategoryId eq ${parentId}`,
+  ACTIVE_CATEGORIES: `${ODATA_PARAMS.FILTER}=IsActive eq true&IsDeleted eq false`,
+  ROOT_CATEGORIES: `${ODATA_PARAMS.FILTER}=ParentCategoryId eq null&$filter=IsDeleted eq false`,
+  CATEGORIES_BY_PARENT: (parentId: number) => `${ODATA_PARAMS.FILTER}=ParentCategoryId eq ${parentId}&$filter=IsDeleted eq false`,
   
   // Tag Queries
-  SEARCH_TAGS: (keyword: string) => `${ODATA_PARAMS.FILTER}=contains(TagName, '${keyword}')`,
-  POPULAR_TAGS: (limit: number = 10) => `${ODATA_PARAMS.ORDER_BY}=ArticleCount desc&${ODATA_PARAMS.TOP}=${limit}`,
+  SEARCH_TAGS: (keyword: string) => `${ODATA_PARAMS.FILTER}=contains(TagName, '${keyword}')&$filter=IsDeleted eq false`,
+  POPULAR_TAGS: (limit: number = 10) => `${ODATA_PARAMS.ORDER_BY}=ArticleCount desc&${ODATA_PARAMS.TOP}=${limit}&$filter=IsDeleted eq false`,
   
   // Account Queries
-  ACTIVE_ACCOUNTS: `${ODATA_PARAMS.FILTER}=IsActive eq true`,
-  ACCOUNTS_BY_ROLE: (role: number) => `${ODATA_PARAMS.FILTER}=AccountRole eq ${role}`,
+  ACTIVE_ACCOUNTS: `${ODATA_PARAMS.FILTER}=IsActive eq true&IsDeleted eq false`,
+  ACCOUNTS_BY_ROLE: (role: number) => `${ODATA_PARAMS.FILTER}=AccountRole eq ${role}&$filter=IsDeleted eq false`,
 } as const;
 
 // HTTP Status Codes

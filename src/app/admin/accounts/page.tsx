@@ -37,8 +37,8 @@ export default function AdminAccountsPage() {
       setLoading(true);
       setError(null);
       
-      // Use OData query to get accounts with related data
-      const query = '$orderby=AccountName asc';
+      // Use OData query to get active accounts only (exclude inactive ones)
+      const query = '$filter=IsActive eq true&$orderby=CreatedDate desc';
       const data = await accountService.getAccountsOData(query);
       setAccounts(data);
     } catch (error) {
@@ -50,39 +50,34 @@ export default function AdminAccountsPage() {
   };
 
   const handleSearch = async () => {
+    if (!searchTerm.trim() && !filterRole && filterStatus === '') {
+      fetchAccounts();
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      let query = '';
-      const filters: string[] = [];
+      const filters: string[] = ['IsActive eq true']; // Only show active accounts
       
-      // Add search filter
       if (searchTerm.trim()) {
-        filters.push(`contains(tolower(AccountName), '${searchTerm.toLowerCase()}') or contains(tolower(AccountEmail), '${searchTerm.toLowerCase()}')`);
+        filters.push(`(contains(tolower(AccountName), '${searchTerm.toLowerCase()}') or contains(tolower(AccountEmail), '${searchTerm.toLowerCase()}'))`);
       }
       
-      // Add role filter
       if (filterRole !== '') {
         filters.push(`AccountRole eq ${filterRole}`);
       }
       
-      // Add status filter
       if (filterStatus !== '') {
         filters.push(`IsActive eq ${filterStatus}`);
       }
       
-      // Build query
-      if (filters.length > 0) {
-        query = `$filter=${filters.join(' and ')}&$orderby=AccountName asc`;
-      } else {
-        query = '$orderby=AccountName asc';
-      }
-      
+      const query = `$filter=${filters.join(' and ')}&$orderby=CreatedDate desc`;
       const data = await accountService.getAccountsOData(query);
       setAccounts(data);
     } catch (error) {
-      console.error('Search failed:', error);
+      console.error('Search/filter failed:', error);
       setError('Search failed. Please try again.');
     } finally {
       setLoading(false);
@@ -179,13 +174,15 @@ export default function AdminAccountsPage() {
 
     try {
       setDeleteLoading(true);
-      await accountService.deleteAccount(selectedAccount.accountId);
+      // Import trashService
+      const { trashService } = await import('@/lib/api-services');
+      await trashService.softDeleteAccount(selectedAccount.accountId);
       setShowDeleteConfirm(false);
       setSelectedAccount(null);
       await fetchAccounts();
     } catch (error) {
       console.error('Delete account failed:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete account. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to move account to trash. Please try again.');
     } finally {
       setDeleteLoading(false);
     }
@@ -357,18 +354,18 @@ export default function AdminAccountsPage() {
           isOpen={showDeleteConfirm}
           onClose={closeModals}
           onConfirm={handleDeleteConfirm}
-          title="Delete Account"
+          title="Move to Trash"
           message={
             <div>
               <p className="mb-2">
-                Are you sure you want to delete the account <strong>{selectedAccount?.accountName}</strong>?
+                Are you sure you want to move the account <strong>{selectedAccount?.accountName}</strong> to trash?
               </p>
               <p className="text-sm text-gray-600">
-                This action cannot be undone. The account will be permanently deleted if it has not created any news articles.
+                The account will be deactivated and moved to trash. It can be restored later.
               </p>
             </div>
           }
-          confirmText="Delete Account"
+          confirmText="Move to Trash"
           type="danger"
           isLoading={deleteLoading}
         />

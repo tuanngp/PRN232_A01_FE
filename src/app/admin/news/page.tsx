@@ -24,8 +24,8 @@ export default function AdminNewsPage() {
       setLoading(true);
       setError(null);
       
-      // Use OData query to get articles with related data
-      const query = '$orderby=CreatedDate desc';
+      // Use OData query to get active articles only (exclude deleted ones)
+      const query = '$filter=IsDeleted eq false&$orderby=CreatedDate desc';
       const data = await newsService.getNewsOData(query);
       setArticles(data);
     } catch (error) {
@@ -46,8 +46,8 @@ export default function AdminNewsPage() {
       setLoading(true);
       setError(null);
       
-      // Search in title using OData
-      const query = `$expand=Category,NewsArticleTags($expand=Tag)&$filter=contains(tolower(NewsTitle), '${searchTerm.toLowerCase()}')&$orderby=CreatedDate desc`;
+      // Search in title using OData, exclude deleted articles
+      const query = `$expand=Category,NewsArticleTags($expand=Tag)&$filter=IsDeteted eq false and contains(tolower(NewsTitle), '${searchTerm.toLowerCase()}')&$orderby=CreatedDate desc`;
       const data = await newsService.getNewsOData(query);
       setArticles(data);
     } catch (error) {
@@ -69,16 +69,18 @@ export default function AdminNewsPage() {
   };
 
   const handleDelete = async (articleId: number) => {
-    if (!confirm('Are you sure you want to delete this article?')) {
+    if (!confirm('Are you sure you want to move this article to trash?')) {
       return;
     }
 
     try {
-      await newsService.deleteNews(articleId);
+      // Import trashService
+      const { trashService } = await import('@/lib/api-services');
+      await trashService.softDeleteNews(articleId);
       await fetchArticles(); // Refresh the list
     } catch (error) {
       console.error('Delete failed:', error);
-      alert('Failed to delete article. Please try again.');
+      alert('Failed to move article to trash. Please try again.');
     }
   };
 

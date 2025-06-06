@@ -20,6 +20,7 @@ export const ROUTES = {
   ADMIN_NEWS_CREATE: '/admin/news/create',
   ADMIN_NEWS_EDIT: (id: number) => `/admin/news/${id}/edit`,
   ADMIN_TAGS: '/admin/tags',
+  ADMIN_TRASH: '/admin/trash',
   ADMIN_ACCOUNTS: '/admin/accounts',
   
   // Staff Routes
@@ -47,6 +48,7 @@ export const ROUTE_TITLES = {
   [ROUTES.ADMIN_NEWS]: 'Quản lý tin tức',
   [ROUTES.ADMIN_NEWS_CREATE]: 'Tạo tin tức mới',
   [ROUTES.ADMIN_TAGS]: 'Quản lý thẻ',
+  [ROUTES.ADMIN_TRASH]: 'Thùng rác',
   [ROUTES.ADMIN_ACCOUNTS]: 'Quản lý tài khoản',
   [ROUTES.STAFF_DASHBOARD]: 'Bảng điều khiển',
 } as const; 

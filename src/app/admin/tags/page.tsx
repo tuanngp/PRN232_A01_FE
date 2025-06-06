@@ -74,18 +74,22 @@ export default function AdminTagsPage() {
     const tag = tags.find(t => t.tagId === tagId);
     const tagName = tag?.tagName || 'this tag';
     
-    if (!confirm(`Are you sure you want to delete "${tagName}"? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to move "${tagName}" to trash? This will save the tag information for recovery.`)) {
       return;
     }
 
     try {
+      // Import trashService and use soft delete
+      const { trashService } = await import('@/lib/api-services');
+      await trashService.softDeleteTag(tagId);
+      // Then delete from backend (since we saved it in localStorage)
       await tagService.deleteTag(tagId);
       // Remove tag from local state immediately for better UX
       setTags(prev => prev.filter(t => t.tagId !== tagId));
-      console.log('✅ Tag deleted successfully:', tagName);
+      console.log('✅ Tag moved to trash successfully:', tagName);
     } catch (error) {
       console.error('Delete failed:', error);
-      alert('Failed to delete tag. This tag may be associated with articles.');
+      alert('Failed to move tag to trash. This tag may be associated with articles.');
       // Refresh the list in case of error to ensure data consistency
       fetchTags();
     }

@@ -3,6 +3,7 @@
 import { CreateTagModal } from '@/components/admin/CreateTagModal';
 import { StaffRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import { categoryService, newsArticleTagService, newsService, tagService } from '@/lib/api-services';
 import { Category, NewsArticle, Tag, UpdateNewsArticleDto } from '@/types/api';
 import { useParams, useRouter } from 'next/navigation';
@@ -19,6 +20,7 @@ export default function EditNewsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   // New tag creation states
   const [showCreateTagModal, setShowCreateTagModal] = useState(false);
@@ -64,6 +66,9 @@ export default function EditNewsPage() {
         categoryId: articleData.categoryId
       });
 
+      // Set current image URL
+      setImageUrl(articleData.imageUrl || '');
+
       // Set selected tags
       try {
         const articleTags = await newsArticleTagService.getArticleTags(newsId);
@@ -92,7 +97,11 @@ export default function EditNewsPage() {
       setError(null);
 
       // Update the article
-      await newsService.updateNews(newsId, formData);
+      const updateData = {
+        ...formData,
+        imageUrl: imageUrl || undefined
+      };
+      await newsService.updateNews(newsId, updateData);
 
       // Update tags if they changed
       try {
@@ -253,6 +262,14 @@ export default function EditNewsPage() {
                 placeholder="Enter article headline..."
               />
             </div>
+
+            {/* Image Upload */}
+            <ImageUpload
+              onImageUploaded={setImageUrl}
+              currentImageUrl={imageUrl}
+              disabled={saving}
+              label="Article Image"
+            />
 
             {/* Category and Source Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

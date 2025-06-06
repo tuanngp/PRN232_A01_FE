@@ -80,11 +80,9 @@ export function GoogleLoginButton({
     }
   }, [isGoogleLoaded, onSuccess, onError]);
 
-  // Fallback button if Google script fails to load
   const handleFallbackClick = () => {
     if (disabled) return;
     
-    // Create a basic OAuth2 flow URL (fallback)
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     const redirectUri = `${window.location.origin}/auth/google/callback`;
     const scope = 'openid email profile';

@@ -1,9 +1,8 @@
-import React from 'react';
-import Link from 'next/link';
-import { NewsArticle } from '@/types/api';
-import { formatDate, generateExcerpt } from '@/lib/utils';
-import { ROUTES } from '@/constants/routes';
 import { Card, CardContent } from '@/components/ui/Card';
+import { ROUTES } from '@/constants/routes';
+import { formatDate, generateExcerpt } from '@/lib/utils';
+import { NewsArticle } from '@/types/api';
+import Link from 'next/link';
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -23,6 +22,23 @@ export function NewsCard({
   className = ''
 }: NewsCardProps) {
   const excerpt = article.headline || (article.newsContent ? generateExcerpt(article.newsContent, 150) : '');
+  
+  // Helper function to get tags from newsArticleTags
+  const getTags = () => {
+    if (!article.newsArticleTags) return [];
+    
+    if (Array.isArray(article.newsArticleTags)) {
+      return article.newsArticleTags.map(nat => nat.tag).filter((tag): tag is NonNullable<typeof tag> => Boolean(tag));
+    }
+    
+    if (article.newsArticleTags.$values) {
+      return article.newsArticleTags.$values.map(nat => nat.tag).filter((tag): tag is NonNullable<typeof tag> => Boolean(tag));
+    }
+    
+    return [];
+  };
+  
+  const tags = getTags();
 
   if (variant === 'compact') {
     return (
@@ -57,9 +73,22 @@ export function NewsCard({
     return (
       <Link href={ROUTES.ARTICLE(article.newsArticleId)} className={`block group ${className}`}>
         <Card hover className="overflow-hidden">
-          <div className="aspect-video bg-gray-100 relative">
-            {/* Placeholder for image */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <div className="aspect-video bg-gray-100 relative overflow-hidden">
+            {article.imageUrl ? (
+              <img 
+                src={article.imageUrl} 
+                alt={article.newsTitle}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            {/* Fallback placeholder */}
+            <div className={`absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center ${article.imageUrl ? 'hidden' : ''}`}>
               <svg className="w-12 h-12 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -99,9 +128,22 @@ export function NewsCard({
   return (
     <Link href={ROUTES.ARTICLE(article.newsArticleId)} className={`block group ${className}`}>
       <Card hover className="h-full overflow-hidden">
-        <div className="aspect-video bg-gray-100 relative">
-          {/* Placeholder for image */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
+        <div className="aspect-video bg-gray-100 relative overflow-hidden">
+          {article.imageUrl ? (
+            <img 
+              src={article.imageUrl} 
+              alt={article.newsTitle}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                // Fallback to placeholder if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          {/* Fallback placeholder */}
+          <div className={`absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center ${article.imageUrl ? 'hidden' : ''}`}>
             <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -131,9 +173,9 @@ export function NewsCard({
                 {formatDate(article.createdDate, 'relative')}
               </time>
               
-              {article.tags && article.tags.length > 0 && (
+              {tags && tags.length > 0 && (
                 <div className="flex items-center space-x-1">
-                  {article.tags.slice(0, 2).map((tag) => (
+                  {tags.slice(0, 2).map((tag) => (
                     <span
                       key={tag.tagId}
                       className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"
@@ -141,9 +183,9 @@ export function NewsCard({
                       {tag.tagName}
                     </span>
                   ))}
-                  {article.tags.length > 2 && (
+                  {tags.length > 2 && (
                     <span className="text-xs text-gray-500">
-                      +{article.tags.length - 2}
+                      +{tags.length - 2}
                     </span>
                   )}
                 </div>

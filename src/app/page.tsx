@@ -201,11 +201,25 @@ export default function HomePage() {
                     className="group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                   >
                     <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
-                      <img 
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_VFXTzmjhTIBtts6hOHQqvCn5AH5TVvKBwWg529TPLZOl1EI60Ji_f4AUxoptptTIGkvOfR0uI0vLZ2Cf1asfXGCixi5lP68O6H12YlwyTl198R5JZpc-f3xjL7iDrd80C02844EyWjAP7XgEdd3A7W-fHn3Btfh9aLxRNYrHyS9BXKuZMD2KW93rMndONFZ1aTW6rPa6qPnj4TTCEjZh5hVfxKaW1Dl6f1EdeU9KybgY49LkdjZfNGFaxIKD_S47-zi0BxFeN_0" 
-                        alt={article.newsTitle}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
+                      {article.imageUrl ? (
+                        <img 
+                          src={article.imageUrl} 
+                          alt={article.newsTitle}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      {/* Fallback placeholder */}
+                      <div className={`absolute inset-0 bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center ${article.imageUrl ? 'hidden' : ''}`}>
+                        <svg className="w-12 h-12 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
                       <div className="absolute top-3 left-3">
                         <span className="px-2 py-1 bg-white/90 text-slate-700 text-xs font-medium rounded-full">
                           {article.category?.categoryName || 'News'}
@@ -223,15 +237,7 @@ export default function HomePage() {
                       )}
                       <div className="flex items-center justify-between text-xs text-slate-500">
                         <span>{timeAgo(article.createdDate)}</span>
-                        {article.tags && article.tags.length > 0 && (
-                          <div className="flex gap-1">
-                            {article.tags.slice(0, 2).map((tag, index) => (
-                              <span key={tag.tagId} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full">
-                                {tag.tagName}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {/* Tags would be handled by a helper function if needed */}
                       </div>
                     </div>
                   </Link>

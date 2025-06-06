@@ -38,6 +38,12 @@ const navItems: NavItem[] = [
     roles: [AccountRole.Staff]
   },
   {
+    href: '/admin/trash',
+    icon: 'delete',
+    label: 'Trash',
+    roles: [AccountRole.Admin, AccountRole.Staff]
+  },
+  {
     href: '/admin/accounts',
     icon: 'people',
     label: 'Accounts',

@@ -20,6 +20,7 @@ import {
   LoginRequest,
   LoginResponse,
   NewsArticle,
+  NewsStatus,
   RefreshTokenRequest,
   ReplaceTagsDto,
   ResetPasswordDto,
@@ -28,6 +29,8 @@ import {
   SystemAccount,
   Tag,
   TagStatistics,
+  TrashItem,
+  TrashStatistics,
   UpdateCategoryDto,
   UpdateNewsArticleDto,
   UpdateProfileDto,
@@ -305,9 +308,14 @@ export const categoryService = {
     return response.data;
   },
 
-  // Delete category
+  // Soft delete category
   async deleteCategory(id: number): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.CATEGORY.BY_ID(id));
+  },
+
+  // Hard delete category (Admin only)
+  async hardDeleteCategory(id: number): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.CATEGORY.HARD_DELETE(id));
   },
 
   // Get subcategories by parent ID
@@ -472,9 +480,14 @@ export const newsService = {
     return response.data;
   },
 
-  // Delete news article
+  // Soft delete news article
   async deleteNews(id: number): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.NEWS_ARTICLE.BY_ID(id));
+  },
+
+  // Hard delete news article (Admin only)
+  async hardDeleteNews(id: number): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.NEWS_ARTICLE.HARD_DELETE(id));
   },
 
   // Change news status
@@ -890,9 +903,14 @@ export const tagService = {
     return response.data;
   },
 
-  // Delete tag
+  // Soft delete tag
   async deleteTag(id: number): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.TAG.BY_ID(id));
+  },
+
+  // Hard delete tag (Admin only)
+  async hardDeleteTag(id: number): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.TAG.HARD_DELETE(id));
   },
 
   // Search tags
@@ -973,7 +991,7 @@ export const searchService = {
 
     const skip = (pageNumber - 1) * pageSize;
     const filters: string[] = [];
-
+    filters.push(`IsDeleted eq false`);
     if (keyword) {
       filters.push(`contains(NewsTitle, '${keyword}') or contains(NewsContent, '${keyword}')`);
     }
@@ -1005,5 +1023,187 @@ export const searchService = {
       articles,
       totalCount
     };
+  }
+};
+
+// ===== TRASH SERVICES =====
+
+export const trashService = {
+  // Soft delete methods using proper API endpoints
+  async softDeleteNews(id: number): Promise<void> {
+    await newsService.deleteNews(id);
+  },
+
+  async softDeleteCategory(id: number): Promise<void> {
+    await categoryService.deleteCategory(id);
+  },
+
+  async softDeleteTag(id: number): Promise<void> {
+    await tagService.deleteTag(id);
+  },
+
+  async softDeleteAccount(id: number): Promise<void> {
+    // SystemAccount không có soft delete API, chỉ toggle status
+    await accountService.toggleAccountStatus(id);
+  },
+
+  // Hard delete methods (Admin only)
+  async hardDeleteNews(id: number): Promise<void> {
+    await newsService.hardDeleteNews(id);
+  },
+
+  async hardDeleteCategory(id: number): Promise<void> {
+    await categoryService.hardDeleteCategory(id);
+  },
+
+  async hardDeleteTag(id: number): Promise<void> {
+    await tagService.hardDeleteTag(id);
+  },
+
+  // Remove tag from article
+  async removeTagFromArticle(articleId: number, tagId: number): Promise<void> {
+    await newsArticleTagService.removeTagFromArticle(articleId, tagId);
+  },
+
+  // Lấy danh sách items trong thùng rác
+  async getTrashItems(): Promise<TrashItem[]> {
+    const items: TrashItem[] = [];
+    
+    // Lấy news bị soft delete (status = Deleted)
+    try {
+      const query = '$filter=IsDeleted eq true&$orderby=CreatedDate desc';
+      const deletedNews = await newsService.getNewsOData(query);
+      items.push(...deletedNews.map(news => ({
+        id: news.newsArticleId,
+        type: 'news' as const,
+        title: news.newsTitle,
+        deletedDate: news.modifiedDate || new Date().toISOString(),
+        deletedBy: news.modifiedBy?.accountName || 'Unknown',
+        originalData: news
+      })));
+    } catch (error) {
+      console.error('Error loading deleted news:', error);
+    }
+
+    // Lấy categories bị deactivate
+    try {
+      const inactiveCategories = await categoryService.getCategoriesOData("$filter=IsActive eq false");
+      items.push(...inactiveCategories.map(category => ({
+        id: category.categoryId,
+        type: 'category' as const,
+        title: category.categoryName,
+        deletedDate: category.modifiedDate || new Date().toISOString(),
+        deletedBy: 'Unknown',
+        originalData: category
+      })));
+    } catch (error) {
+      console.error('Error loading inactive categories:', error);
+    }
+
+    // Lấy accounts bị deactivate (chỉ admin mới xem được)
+    const currentUser = authService.getCurrentUser();
+    if (currentUser?.accountRole === AccountRole.Admin) {
+      try {
+        const inactiveAccounts = await accountService.getAccountsOData("$filter=IsActive eq false");
+        items.push(...inactiveAccounts.map(account => ({
+          id: account.accountId,
+          type: 'account' as const,
+          title: account.accountName,
+          deletedDate: account.modifiedDate || new Date().toISOString(),
+          deletedBy: 'Unknown',
+          originalData: account
+        })));
+      } catch (error) {
+        console.error('Error loading inactive accounts:', error);
+      }
+    }
+
+    // Lấy tags từ localStorage (vì backend sẽ xóa thật)
+    const localTrashItems = this.getLocalTrashItems();
+    items.push(...localTrashItems.filter(item => item.type === 'tag'));
+
+    return items.sort((a, b) => new Date(b.deletedDate).getTime() - new Date(a.deletedDate).getTime());
+  },
+
+  // Restore item từ thùng rác
+  async restoreItem(item: TrashItem): Promise<void> {
+    switch (item.type) {
+      case 'news':
+        await newsService.changeNewsStatus(item.id, { status: NewsStatus.Active });
+        break;
+      case 'category':
+        await categoryService.updateCategory(item.id, { isActive: true });
+        break;
+      case 'tag':
+        // Tạo lại tag từ dữ liệu gốc
+        const tagData = item.originalData;
+        await tagService.createTag({
+          tagName: tagData.tagName,
+          note: tagData.note
+        });
+        // Xóa khỏi localStorage
+        this.removeFromLocalTrash(item.id, 'tag');
+        break;
+      case 'account':
+        await accountService.updateAccount(item.id, { isActive: true });
+        break;
+    }
+  },
+
+  // Xóa cứng (hard delete)
+  async permanentDelete(item: TrashItem): Promise<void> {
+    switch (item.type) {
+      case 'news':
+        await newsService.hardDeleteNews(item.id);
+        break;
+      case 'category':
+        await categoryService.hardDeleteCategory(item.id);
+        break;
+      case 'tag':
+        await tagService.hardDeleteTag(item.id);
+        break;
+      case 'account':
+        // SystemAccount không có hard delete API
+        throw new Error('SystemAccount không hỗ trợ hard delete');
+    }
+  },
+
+  // Xóa tất cả items trong thùng rác
+  async emptyTrash(): Promise<void> {
+    const items = await this.getTrashItems();
+    for (const item of items) {
+      await this.permanentDelete(item);
+    }
+    // Xóa tất cả items trong localStorage
+    localStorage.removeItem('trashItems');
+  },
+
+  // Lấy thống kê thùng rác
+  async getTrashStatistics(): Promise<TrashStatistics> {
+    const items = await this.getTrashItems();
+    return {
+      totalItems: items.length,
+      newsCount: items.filter(item => item.type === 'news').length,
+      categoryCount: items.filter(item => item.type === 'category').length,
+      tagCount: items.filter(item => item.type === 'tag').length,
+      accountCount: items.filter(item => item.type === 'account').length
+    };
+  },
+
+  // Helper methods for localStorage management
+  getLocalTrashItems(): TrashItem[] {
+    try {
+      const items = localStorage.getItem('trashItems');
+      return items ? JSON.parse(items) : [];
+    } catch (error) {
+      console.error('Error parsing trash items from localStorage:', error);
+      return [];
+    }
+  },
+
+  removeFromLocalTrash(id: number, type: string): void {
+    const items = this.getLocalTrashItems();
+    const filteredItems = items.filter(item => !(item.id === id && item.type === type));
+    localStorage.setItem('trashItems', JSON.stringify(filteredItems));
   }
 }; 

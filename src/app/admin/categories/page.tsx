@@ -34,8 +34,8 @@ export default function AdminCategoriesPage() {
       setLoading(true);
       setError(null);
       
-      // Use OData query to get categories with related data
-      const query = '$orderby=CreatedDate desc';
+      // Use OData query to get active categories only (exclude inactive ones)
+      const query = '$filter=IsActive eq true&$orderby=CategoryName asc';
       const data = await categoryService.getCategoriesOData(query);
       setCategories(data);
     } catch (error) {
@@ -56,8 +56,8 @@ export default function AdminCategoriesPage() {
       setLoading(true);
       setError(null);
       
-      // Search in category name and description using OData
-      const query = `$expand=ParentCategory,SubCategories&$filter=contains(tolower(CategoryName), '${searchTerm.toLowerCase()}') or contains(tolower(CategoryDescription), '${searchTerm.toLowerCase()}')&$orderby=CategoryName asc`;
+      // Search in name and description using OData, only active categories
+      const query = `$filter=IsActive eq true and (contains(tolower(CategoryName), '${searchTerm.toLowerCase()}') or contains(tolower(CategoryDescription), '${searchTerm.toLowerCase()}'))&$orderby=CategoryName asc`;
       const data = await categoryService.getCategoriesOData(query);
       setCategories(data);
     } catch (error) {
@@ -84,9 +84,12 @@ export default function AdminCategoriesPage() {
     setShowEditModal(true);
   };
 
-  const handleDelete = (category: Category) => {
-    setSelectedCategory(category);
-    setShowDeleteConfirm(true);
+  const handleDelete = (categoryId: number) => {
+    const category = categories.find(cat => cat.categoryId === categoryId);
+    if (category) {
+      setSelectedCategory(category);
+      setShowDeleteConfirm(true);
+    }
   };
 
   const handleToggleStatus = async (categoryId: number) => {
@@ -135,13 +138,15 @@ export default function AdminCategoriesPage() {
 
     try {
       setDeleteLoading(true);
-      await categoryService.deleteCategoryWithCheck(selectedCategory.categoryId);
+      // Import trashService
+      const { trashService } = await import('@/lib/api-services');
+      await trashService.softDeleteCategory(selectedCategory.categoryId);
       setShowDeleteConfirm(false);
       setSelectedCategory(null);
       await fetchCategories();
     } catch (error) {
       console.error('Delete category failed:', error);
-      alert(error instanceof Error ? error.message : 'Failed to delete category. Please try again.');
+      alert(error instanceof Error ? error.message : 'Failed to move category to trash. Please try again.');
     } finally {
       setDeleteLoading(false);
     }
@@ -249,18 +254,18 @@ export default function AdminCategoriesPage() {
           isOpen={showDeleteConfirm}
           onClose={closeModals}
           onConfirm={handleDeleteConfirm}
-          title="Delete Category"
+          title="Move to Trash"
           message={
             <div>
               <p className="mb-2">
-                Are you sure you want to delete the category <strong>{selectedCategory?.categoryName}</strong>?
+                Are you sure you want to move the category <strong>{selectedCategory?.categoryName}</strong> to trash?
               </p>
               <p className="text-sm text-gray-600">
-                This action cannot be undone. The category will be permanently deleted if it has no news articles.
+                The category will be moved to trash and can be restored later.
               </p>
             </div>
           }
-          confirmText="Delete Category"
+          confirmText="Move to Trash"
           type="danger"
           isLoading={deleteLoading}
         />
